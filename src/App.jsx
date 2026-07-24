@@ -8,6 +8,8 @@ import ProfileSheet from "./ProfileSheet.jsx";
 import HistorySheet from "./HistorySheet.jsx";
 import CompareView from "./CompareView.jsx";
 import ChatPanel from "./ChatPanel.jsx";
+import Notice from "./Notice.jsx";
+import { hasConsented, recordConsent, withdrawConsent } from "./consent.js";
 import {
   loadHistory,
   addToHistory,
@@ -42,6 +44,9 @@ export default function App() {
   // answered from the document rather than from the report about it.
   const [pdfB64, setPdfB64] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  // "gate" blocks the first upload until the notice is read; "open" is the
+  // same text reopened voluntarily from the footer.
+  const [notice, setNotice] = useState(null);
   const fileInputRef = useRef(null);
 
   const hasProfile = profileIsUseful(profile);
@@ -99,6 +104,11 @@ export default function App() {
       setError(problem);
       return;
     }
+    // Nothing leaves the browser until the notice has been read once.
+    if (!hasConsented()) {
+      setNotice("gate");
+      return;
+    }
     setLoading(true);
     setError(null);
     setReport(null);
@@ -139,6 +149,22 @@ export default function App() {
     setHistory(removeFromHistory(id));
     if (compareBase?.id === id) setCompareBase(null);
     if (comparePair?.some((entry) => entry.id === id)) setComparePair(null);
+  }
+
+  // The one button that has to do exactly what it says: profile, history,
+  // consent, theme — all of it, gone.
+  function eraseEverything() {
+    clearProfile();
+    setProfile(null);
+    setHistory(clearHistory());
+    withdrawConsent();
+    setPdfB64(null);
+    setReport(null);
+    setComparePair(null);
+    setCompareBase(null);
+    setNotice(null);
+    setToast("Everything erased");
+    setTimeout(() => setToast(null), 1600);
   }
 
   function reset() {
@@ -339,6 +365,34 @@ export default function App() {
           </>
         )}
       </main>
+
+      <footer className="no-print mx-auto max-w-5xl px-5 pb-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
+          <p className="text-xs leading-relaxed text-ink/40">
+            Redline reads documents. It is not a solicitor and this is not legal
+            advice.
+          </p>
+          <button
+            onClick={() => setNotice("open")}
+            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 underline-offset-4 hover:text-redline hover:underline"
+          >
+            what this is · privacy · erase everything
+          </button>
+        </div>
+      </footer>
+
+      {notice && (
+        <Notice
+          mode={notice}
+          onAccept={() => {
+            recordConsent();
+            setNotice(null);
+            analyse();
+          }}
+          onClose={() => setNotice(null)}
+          onEraseAll={eraseEverything}
+        />
+      )}
 
       {chatOpen && report && (
         <ChatPanel
