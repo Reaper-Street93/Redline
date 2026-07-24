@@ -1,28 +1,6 @@
 import { formatWhen } from "./history.js";
-
-const RECOMMENDATION = {
-  sign: { label: "Sign it", tone: "text-good" },
-  negotiate_then_sign: { label: "Negotiate, then sign", tone: "text-watch" },
-  push_back_hard: { label: "Push back hard", tone: "text-redline" },
-  walk_away: { label: "Walk away", tone: "text-redline" },
-};
-
-const ASSESSMENT_DOT = {
-  favourable: "bg-good",
-  standard: "bg-ink/25",
-  watch: "bg-watch",
-  red_flag: "bg-redline",
-};
-
-function Label({ children, className = "" }) {
-  return (
-    <div
-      className={`font-mono text-[0.625rem] uppercase tracking-[0.22em] text-ink/45 ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
+import { Label } from "./ui.jsx";
+import { assessmentOf, recommendationOf } from "./vocab.js";
 
 // Two numbers, side by side, with the better one in full ink and the other
 // dimmed. For most rows higher wins; for flag counts, lower does.
@@ -68,7 +46,7 @@ function TermCell({ term }) {
     <div className="flex items-start gap-2 px-4 py-3">
       <span
         className={`mt-1.5 h-1.5 w-1.5 shrink-0 ${
-          ASSESSMENT_DOT[term.assessment] ?? "bg-ink/25"
+          assessmentOf(term.assessment).dot
         }`}
         title={term.assessment}
       />
@@ -79,10 +57,7 @@ function TermCell({ term }) {
 
 function Column({ entry }) {
   const doc = entry.report?.document ?? {};
-  const rec = RECOMMENDATION[entry.report?.overall?.recommendation] ?? {
-    label: "—",
-    tone: "text-ink/50",
-  };
+  const rec = recommendationOf(entry.report?.overall?.recommendation);
   return (
     <div className="px-4 py-4 text-center">
       <Label>{formatWhen(entry.at)}</Label>

@@ -1,11 +1,5 @@
 import { formatWhen } from "./history.js";
-
-const RECOMMENDATION = {
-  sign: { label: "sign it", tone: "text-good" },
-  negotiate_then_sign: { label: "negotiate first", tone: "text-watch" },
-  push_back_hard: { label: "push back", tone: "text-redline" },
-  walk_away: { label: "walk away", tone: "text-redline" },
-};
+import { recommendationOf } from "./vocab.js";
 
 export default function HistorySheet({
   history,
@@ -49,11 +43,7 @@ export default function HistorySheet({
 
           {history.map((entry) => {
             const doc = entry.report?.document ?? {};
-            const rec =
-              RECOMMENDATION[entry.report?.overall?.recommendation] ?? {
-                label: "—",
-                tone: "text-ink/50",
-              };
+            const rec = recommendationOf(entry.report?.overall?.recommendation);
             const selected = compareBase?.id === entry.id;
 
             return (
@@ -74,7 +64,7 @@ export default function HistorySheet({
                     <span
                       className={`font-mono text-[0.625rem] uppercase tracking-[0.16em] ${rec.tone}`}
                     >
-                      {rec.label}
+                      {rec.short}
                     </span>
                   </div>
                   <h3 className="mt-1 font-serif text-lg leading-snug">

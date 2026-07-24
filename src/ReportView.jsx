@@ -1,75 +1,13 @@
 import { useState } from "react";
-
-// Four assessments, three colours: a term is better than average, ordinary,
-// worth watching, or a problem.
-const ASSESSMENT = {
-  favourable: { label: "favourable", tone: "text-good", dot: "bg-good" },
-  standard: { label: "standard", tone: "text-ink/45", dot: "bg-ink/30" },
-  watch: { label: "watch", tone: "text-watch", dot: "bg-watch" },
-  red_flag: { label: "red flag", tone: "text-redline", dot: "bg-redline" },
-};
-
-const RECOMMENDATION = {
-  sign: { label: "Sign it", tone: "text-good" },
-  negotiate_then_sign: { label: "Negotiate, then sign", tone: "text-watch" },
-  push_back_hard: { label: "Push back hard", tone: "text-redline" },
-  walk_away: { label: "Walk away", tone: "text-redline" },
-};
-
-const FIT_VERDICT = {
-  strong: "text-good",
-  good: "text-good",
-  stretch: "text-watch",
-  mismatch: "text-redline",
-};
-
-const SEVERITY = {
-  high: { label: "high", tone: "text-redline", bar: "bg-redline" },
-  medium: { label: "medium", tone: "text-watch", bar: "bg-watch" },
-  low: { label: "low", tone: "text-ink/45", bar: "bg-rule" },
-};
-
-const PRIORITY = {
-  must: "border-redline text-redline",
-  should: "border-watch text-watch",
-  nice: "border-rule text-ink/50",
-};
-
-const CONTRACT_TYPE = {
-  permanent: "Permanent",
-  fixed_term: "Fixed term",
-  contractor: "Contractor",
-  zero_hours: "Zero hours",
-  internship: "Internship",
-  other: "Other",
-};
-
-// Small caps mono label — the typographic workhorse of the whole report.
-function Label({ children, className = "" }) {
-  return (
-    <div
-      className={`font-mono text-[0.625rem] uppercase tracking-[0.22em] text-ink/45 ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-// A clause lifted from the contract, set in serif behind a redline.
-export function Clause({ text }) {
-  if (!text || text === "not in the contract") {
-    return (
-      <p className="font-mono text-xs text-ink/40">
-        Not in the contract — this ask adds something that isn&apos;t there.
-      </p>
-    );
-  }
-  return (
-    <blockquote className="clause text-[0.9rem] leading-relaxed text-ink/70">
-      {text}
-    </blockquote>
-  );
-}
+import { Label, Clause } from "./ui.jsx";
+import {
+  CONTRACT_TYPE,
+  FIT_VERDICT,
+  assessmentOf,
+  priorityOf,
+  recommendationOf,
+  severityOf,
+} from "./vocab.js";
 
 // Likelihood is a percentage; impact is 1-5. Both render as the same thin
 // bar so the eye can compare them down a column of asks.
@@ -109,7 +47,7 @@ function AskCard({ ask, onCopy }) {
             </span>
             <span
               className={`border px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] ${
-                PRIORITY[ask.priority] ?? PRIORITY.nice
+                priorityOf(ask.priority)
               }`}
             >
               {ask.priority}
@@ -180,7 +118,7 @@ function AskCard({ ask, onCopy }) {
 
 function TermRow({ term }) {
   const [open, setOpen] = useState(false);
-  const a = ASSESSMENT[term.assessment] ?? ASSESSMENT.standard;
+  const a = assessmentOf(term.assessment);
 
   return (
     <div className="border-t border-rule">
@@ -223,10 +161,7 @@ export default function ReportView({ report, onCopyText }) {
   const doc = report.document ?? {};
   // Reports saved before the field was renamed carry `gaps`.
   const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
-  const rec = RECOMMENDATION[report.overall?.recommendation] ?? {
-    label: report.overall?.recommendation ?? "—",
-    tone: "text-ink",
-  };
+  const rec = recommendationOf(report.overall?.recommendation);
   const asks = report.asks ?? [];
   const flags = report.flags ?? [];
   const hasHighFlag = flags.some((f) => f.severity === "high");
@@ -368,7 +303,7 @@ export default function ReportView({ report, onCopyText }) {
           </h3>
           <div className="mt-2">
             {flags.map((flag, i) => {
-              const s = SEVERITY[flag.severity] ?? SEVERITY.low;
+              const s = severityOf(flag.severity);
               return (
                 <article key={i} className="border-t border-rule py-4">
                   <div className="flex items-center gap-2.5">
