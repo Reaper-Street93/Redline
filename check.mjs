@@ -21,7 +21,9 @@ await build({
       export { default as ReportView } from "./src/ReportView.jsx";
       export { default as CompareView } from "./src/CompareView.jsx";
       export { default as HistorySheet } from "./src/HistorySheet.jsx";
+      export { default as ContractSheet } from "./src/ContractSheet.jsx";
       export { SAMPLE_REPORT } from "./src/sampleReport.js";
+      export { findClauses, SAMPLE_CLAUSES } from "./src/sampleContract.js";
     `,
     resolveDir: new URL(".", import.meta.url).pathname,
     loader: "jsx",
@@ -31,7 +33,10 @@ await build({
   loader: { ".js": "jsx", ".jsx": "jsx" }, jsx: "automatic",
   logLevel: "error",
 });
-const { UploadScreen, ReportView, CompareView, HistorySheet, SAMPLE_REPORT } = await import(out);
+const {
+  UploadScreen, ReportView, CompareView, HistorySheet, ContractSheet,
+  SAMPLE_REPORT, findClauses, SAMPLE_CLAUSES,
+} = await import(out);
 
 const results = [];
 const check = (name, cond, detail = "") => results.push([cond ? "PASS" : "FAIL", name, detail]);
@@ -87,6 +92,34 @@ weird.asks[0].priority = "urgent";
 const weirdHtml = renderToStaticMarkup(React.createElement(ReportView, { report: weird, onCopyText: () => {} }));
 const leaks = weirdHtml.match(/(?:class="[^"]*undefined|>\s*undefined\s*<)/g);
 check("report: survives unknown enums", !leaks, leaks ? leaks.join(" ") : "");
+
+// ── The example contract must actually back the example report ─────────────
+// This is the app's central promise made checkable, so it is worth asserting:
+// every clause the example report quotes has to exist, word for word, in the
+// example contract. If someone edits one and not the other, this fails.
+const quoted = [
+  ...SAMPLE_REPORT.key_terms.map((t) => t.verbatim),
+  ...SAMPLE_REPORT.asks.map((a) => a.clause),
+  ...SAMPLE_REPORT.flags.map((f) => f.clause),
+].filter((q) => q && q !== "not in the contract");
+const unresolved = quoted.filter((q) => findClauses(q).length === 0);
+check("contract: every quote resolves to a clause", !unresolved.length,
+  unresolved.length ? unresolved[0].slice(0, 60) : `${quoted.length} quotes, ${SAMPLE_CLAUSES.length} clauses`);
+check("contract: a quote spanning two clauses finds both",
+  findClauses(SAMPLE_REPORT.key_terms[1].verbatim).length === 2,
+  findClauses(SAMPLE_REPORT.key_terms[1].verbatim).join(", "));
+
+const sheet = renderToStaticMarkup(React.createElement(ContractSheet, { highlight: ["4.1"], onClose(){} }));
+check("contract: sheet renders the document", sheet.includes("Contract of Employment") && sheet.includes("£52,000"));
+check("contract: highlighted clause is marked", sheet.includes("border-redline bg-redline"));
+check("contract: says it is fictional", sheet.includes("does not exist"));
+
+// The source link must appear only when a source exists — a report from a real
+// upload has no document to open, because the PDF is never kept.
+const withSource = renderToStaticMarkup(React.createElement(ReportView, { report: SAMPLE_REPORT, onCopyText(){}, onShowSource(){} }));
+const withoutSource = renderToStaticMarkup(React.createElement(ReportView, { report: SAMPLE_REPORT, onCopyText(){} }));
+check("report: offers the source link for the example", withSource.includes("see it in the contract"));
+check("report: no source link without a source", !withoutSource.includes("see it in the contract"));
 
 // ── CompareView ────────────────────────────────────────────────────────────
 const a = { id: 1, at: new Date().toISOString(), report: SAMPLE_REPORT };

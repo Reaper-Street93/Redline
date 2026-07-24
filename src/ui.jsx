@@ -16,7 +16,11 @@ export function Label({ children, className = "" }) {
 // A clause lifted from the contract, set in serif behind a redline. The
 // "not in the contract" case is a real answer, not a missing value, so it says
 // so rather than rendering an empty quote.
-export function Clause({ text }) {
+//
+// `onFind` is passed only when the source document is available to look at —
+// the example report has one, a report from your own upload does not, because
+// Redline never keeps the PDF.
+export function Clause({ text, onFind }) {
   if (!text || text === "not in the contract") {
     return (
       <p className="font-mono text-xs text-ink/40">
@@ -27,6 +31,14 @@ export function Clause({ text }) {
   return (
     <blockquote className="redlined text-[0.9rem] leading-relaxed text-ink/70">
       {text}
+      {onFind && (
+        <button
+          onClick={() => onFind(text)}
+          className={`no-print mt-1.5 block ${micro} text-ink/40 underline-offset-4 hover:text-redline hover:underline`}
+        >
+          see it in the contract →
+        </button>
+      )}
     </blockquote>
   );
 }

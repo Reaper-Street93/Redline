@@ -3,6 +3,8 @@ import ReportView from "./ReportView.jsx";
 import UploadScreen from "./UploadScreen.jsx";
 import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
+import ContractSheet from "./ContractSheet.jsx";
+import { findClauses } from "./sampleContract.js";
 import { fileToBase64, checkFile } from "./pdf.js";
 import { downloadCsv } from "./csv.js";
 import { redactProfile } from "./redact.js";
@@ -50,6 +52,12 @@ export default function App() {
   // terms and asks of the last report stay open on the next one, because React
   // keeps the state of components it considers the same.
   const [reportKey, setReportKey] = useState(0);
+  // Only the example report has a document you can go and read: a report from
+  // your own upload never can, because the PDF is never kept. `null` means
+  // there is nothing to show; an array of clause numbers opens the contract at
+  // those clauses.
+  const [sourceClauses, setSourceClauses] = useState(null);
+  const [isExample, setIsExample] = useState(false);
   // "gate" blocks the first upload until the notice is read; "open" is the
   // same text reopened voluntarily from the footer.
   const [notice, setNotice] = useState(null);
@@ -143,9 +151,11 @@ export default function App() {
     }
   }
 
-  function showReport(next) {
+  function showReport(next, { example = false } = {}) {
     setReport(next);
     setReportKey((k) => k + 1);
+    setIsExample(example);
+    setSourceClauses(null);
   }
 
   function handleCompareClick(entry) {
@@ -181,6 +191,8 @@ export default function App() {
     setCompareBase(null);
     setNotice(null);
     setChatOpen(false);
+    setIsExample(false);
+    setSourceClauses(null);
     setFile(null);
     setError(null);
     setToast("Everything erased");
@@ -188,6 +200,8 @@ export default function App() {
   }
 
   function reset() {
+    setIsExample(false);
+    setSourceClauses(null);
     setPdfB64(null);
     setChatOpen(false);
     setComparePair(null);
@@ -258,7 +272,7 @@ export default function App() {
             onPickFile={handleFile}
             onAnalyse={analyse}
             onOpenProfile={() => setProfileOpen(true)}
-            onShowExample={() => showReport(SAMPLE_REPORT)}
+            onShowExample={() => showReport(SAMPLE_REPORT, { example: true })}
           />
         )}
 
@@ -272,6 +286,14 @@ export default function App() {
                 ← another contract
               </button>
               <div className="flex gap-5">
+                {isExample && (
+                  <button
+                    onClick={() => setSourceClauses([])}
+                    className={`${micro} text-ink/50 hover:text-redline`}
+                  >
+                    the contract
+                  </button>
+                )}
                 <button
                   onClick={() => setChatOpen(true)}
                   className={`${micro} text-redline underline-offset-4 hover:underline`}
@@ -292,7 +314,14 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <ReportView key={reportKey} report={report} onCopyText={copyText} />
+            <ReportView
+              key={reportKey}
+              report={report}
+              onCopyText={copyText}
+              onShowSource={
+                isExample ? (quote) => setSourceClauses(findClauses(quote)) : undefined
+              }
+            />
           </>
         )}
       </main>
@@ -322,6 +351,13 @@ export default function App() {
           }}
           onClose={() => setNotice(null)}
           onEraseAll={eraseEverything}
+        />
+      )}
+
+      {sourceClauses && (
+        <ContractSheet
+          highlight={sourceClauses}
+          onClose={() => setSourceClauses(null)}
         />
       )}
 

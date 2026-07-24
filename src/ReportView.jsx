@@ -31,7 +31,7 @@ function ScoreBar({ label, value, max = 100, tone }) {
 const likelihoodTone = (n) =>
   n >= 60 ? "bg-good" : n >= 35 ? "bg-watch" : "bg-redline";
 
-function AskCard({ ask, onCopy }) {
+function AskCard({ ask, onCopy, onShowSource }) {
   const [open, setOpen] = useState(ask.rank <= 2);
   const muted = ask.should_ask === false;
 
@@ -89,7 +89,7 @@ function AskCard({ ask, onCopy }) {
         <div className="mt-4 grid gap-4">
           <div>
             <Label className="mb-1.5">The clause</Label>
-            <Clause text={ask.clause} />
+            <Clause text={ask.clause} onFind={onShowSource} />
           </div>
           <div>
             <Label className="mb-1.5">Your leverage</Label>
@@ -115,7 +115,7 @@ function AskCard({ ask, onCopy }) {
   );
 }
 
-function TermRow({ term }) {
+function TermRow({ term, onShowSource }) {
   const [open, setOpen] = useState(false);
   const a = assessmentOf(term.assessment);
 
@@ -139,7 +139,7 @@ function TermRow({ term }) {
       {open && (
         <div className="grid gap-3 pb-4 sm:pl-[190px]">
           <p className="text-sm leading-relaxed text-ink/75">{term.note}</p>
-          <Clause text={term.verbatim} />
+          <Clause text={term.verbatim} onFind={onShowSource} />
         </div>
       )}
     </div>
@@ -156,7 +156,7 @@ function StatCell({ label, children, sub }) {
   );
 }
 
-export default function ReportView({ report, onCopyText }) {
+export default function ReportView({ report, onCopyText, onShowSource }) {
   const doc = report.document ?? {};
   // Reports saved before the field was renamed carry `gaps`.
   const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
@@ -233,7 +233,12 @@ export default function ReportView({ report, onCopyText }) {
         </div>
         <div className="mt-2">
           {asks.map((ask) => (
-            <AskCard key={ask.rank} ask={ask} onCopy={onCopyText} />
+            <AskCard
+              key={ask.rank}
+              ask={ask}
+              onCopy={onCopyText}
+              onShowSource={onShowSource}
+            />
           ))}
         </div>
       </section>
@@ -289,7 +294,7 @@ export default function ReportView({ report, onCopyText }) {
         </div>
         <div className="mt-1">
           {(report.key_terms ?? []).map((term, i) => (
-            <TermRow key={i} term={term} />
+            <TermRow key={i} term={term} onShowSource={onShowSource} />
           ))}
         </div>
       </section>
@@ -320,7 +325,7 @@ export default function ReportView({ report, onCopyText }) {
                     {flag.why}
                   </p>
                   <div className="mt-3">
-                    <Clause text={flag.clause} />
+                    <Clause text={flag.clause} onFind={onShowSource} />
                   </div>
                 </article>
               );
