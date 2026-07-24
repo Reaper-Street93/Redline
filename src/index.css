@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Dark mode is a class on <html>, not the OS setting alone — the user can override. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Stock is the paper the contract is printed on; ink is what's on it. */
+  --color-stock: #f4f2ed;
+  --color-ink: #15171c;
+  --color-rule: #d8d5cc;
+
+  /* The redline itself — a deeper, legal crimson, used for the margin rule,
+     the brand mark and nothing else decorative. */
+  --color-redline: #c8102e;
+
+  /* Assessment colours. Deliberately few: a term is fine, worth watching,
+     or a problem. */
+  --color-good: #196f52;
+  --color-watch: #a5620a;
+}
+
+/* The same document photocopied onto dark stock. Every colour lightens
+   enough to keep AA contrast against the near-black. */
+.dark {
+  --color-stock: #101216;
+  --color-ink: #e9e7e1;
+  --color-rule: #292c33;
+  --color-redline: #ff5169;
+  --color-good: #3fbf90;
+  --color-watch: #d99a2b;
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-stock);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Contract quotes are set as indented serif with a redline in the margin —
+   the visual signature of the whole app. */
+.clause {
+  font-family: var(--font-serif);
+  border-left: 2px solid var(--color-redline);
+  padding-left: 0.875rem;
+}
+
+@media print {
+  /* Paper is paper — print always uses the light palette. */
+  :root,
+  .dark {
+    --color-stock: #f4f2ed;
+    --color-ink: #15171c;
+    --color-rule: #d8d5cc;
+    --color-redline: #c8102e;
+    --color-good: #196f52;
+    --color-watch: #a5620a;
+    color-scheme: light;
+  }
+
+  /* Never split an ask or a term across pages. */
+  article,
+  section {
+    break-inside: avoid;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
