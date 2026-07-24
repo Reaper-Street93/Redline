@@ -4,6 +4,7 @@ import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
 import { fileToBase64, checkFile } from "./pdf.js";
 import { downloadCsv } from "./csv.js";
+import { redactProfile } from "./redact.js";
 import ProfileSheet from "./ProfileSheet.jsx";
 import HistorySheet from "./HistorySheet.jsx";
 import CompareView from "./CompareView.jsx";
@@ -118,7 +119,12 @@ export default function App() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf, profile: hasProfile ? profile : null }),
+        body: JSON.stringify({
+          pdf,
+          // Contact details are stripped on the way out — the analysis never
+          // needed them.
+          profile: hasProfile ? redactProfile(profile) : null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.report) {
@@ -397,7 +403,7 @@ export default function App() {
       {chatOpen && report && (
         <ChatPanel
           report={report}
-          profile={hasProfile ? profile : null}
+          profile={hasProfile ? redactProfile(profile) : null}
           pdf={pdfB64}
           onClose={() => setChatOpen(false)}
         />

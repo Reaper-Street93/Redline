@@ -187,9 +187,13 @@ bolted on afterwards.
 4. **Nothing is stored server-side.** No database, no disk writes, no request
    logging of document content. Reports and profile live in your browser's
    localStorage, and "Delete everything" is one button that actually does.
-5. **Data minimisation by default.** An optional redaction pass strips names,
-   addresses, phone numbers and email addresses from the profile before it is
-   sent, because the analysis never needed them.
+5. **Data minimisation by default.** The profile has email addresses, phone
+   numbers, postcodes, National Insurance numbers, long account numbers and
+   URLs stripped out before it is sent — the analysis never needed any of
+   them. It does **not** claim to strip names: doing that properly needs
+   entity recognition, and a redactor that half-works is more dangerous than
+   one whose limits are written down. The contract PDF goes as it is, because
+   it is the thing being read.
 6. **Confidence is surfaced, not hidden.** `read_confidence: "low"` puts a
    banner on the report rather than letting a bad scan quietly produce
    confident nonsense.
