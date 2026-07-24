@@ -9,7 +9,9 @@ const RECOMMENDATION = {
 
 export default function HistorySheet({
   history,
+  compareBase,
   onOpen,
+  onCompareClick,
   onDelete,
   onClearAll,
   onClose,
@@ -25,7 +27,9 @@ export default function HistorySheet({
           <div>
             <h2 className="font-serif text-2xl">Contracts you&apos;ve read</h2>
             <p className="mt-1 text-xs leading-relaxed text-ink/50">
-              Kept in this browser. The PDFs themselves were never stored.
+              {compareBase
+                ? "Now pick the contract to read it against."
+                : "Kept in this browser. The PDFs themselves were never stored."}
             </p>
           </div>
           <button
@@ -50,10 +54,14 @@ export default function HistorySheet({
                 label: "—",
                 tone: "text-ink/50",
               };
+            const selected = compareBase?.id === entry.id;
+
             return (
               <article
                 key={entry.id}
-                className="border-b border-rule py-4"
+                className={`border-b border-rule py-4 ${
+                  selected ? "border-l-2 border-l-redline pl-3" : ""
+                }`}
               >
                 <button
                   onClick={() => onOpen(entry)}
@@ -86,6 +94,14 @@ export default function HistorySheet({
                 </button>
 
                 <div className="mt-3 flex gap-4">
+                  <button
+                    onClick={() => onCompareClick(entry)}
+                    className={`font-mono text-[0.625rem] uppercase tracking-[0.16em] underline-offset-4 hover:text-redline hover:underline ${
+                      selected ? "text-redline" : "text-ink/45"
+                    }`}
+                  >
+                    {selected ? "cancel" : "compare"}
+                  </button>
                   <button
                     onClick={() => onDelete(entry.id)}
                     className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-ink/35 underline-offset-4 hover:text-redline hover:underline"

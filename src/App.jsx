@@ -5,6 +5,7 @@ import { SAMPLE_REPORT } from "./sampleReport.js";
 import { fileToBase64, checkFile } from "./pdf.js";
 import ProfileSheet from "./ProfileSheet.jsx";
 import HistorySheet from "./HistorySheet.jsx";
+import CompareView from "./CompareView.jsx";
 import {
   loadHistory,
   addToHistory,
@@ -31,6 +32,10 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [history, setHistory] = useState(loadHistory);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Comparing takes two clicks: the first picks a baseline, the second the
+  // contract to read against it.
+  const [compareBase, setCompareBase] = useState(null);
+  const [comparePair, setComparePair] = useState(null);
   const fileInputRef = useRef(null);
 
   const hasProfile = profileIsUseful(profile);
@@ -111,7 +116,27 @@ export default function App() {
     }
   }
 
+  function handleCompareClick(entry) {
+    if (!compareBase) {
+      setCompareBase(entry);
+    } else if (compareBase.id === entry.id) {
+      setCompareBase(null);
+    } else {
+      setComparePair([compareBase, entry]);
+      setCompareBase(null);
+      setHistoryOpen(false);
+    }
+  }
+
+  function handleDelete(id) {
+    setHistory(removeFromHistory(id));
+    if (compareBase?.id === id) setCompareBase(null);
+    if (comparePair?.some((entry) => entry.id === id)) setComparePair(null);
+  }
+
   function reset() {
+    setComparePair(null);
+    setCompareBase(null);
     setReport(null);
     setFile(null);
     setError(null);
@@ -166,7 +191,11 @@ export default function App() {
       <main className="mx-auto max-w-5xl px-5 py-10">
         {loading && <Reading filename={file?.name} />}
 
-        {!loading && !report && (
+        {!loading && comparePair && (
+          <CompareView pair={comparePair} onClose={() => setComparePair(null)} />
+        )}
+
+        {!loading && !comparePair && !report && (
           <>
             <section className="mx-auto max-w-2xl text-center">
               <h1 className="font-serif text-4xl leading-[1.15] sm:text-5xl">
@@ -267,7 +296,7 @@ export default function App() {
           </>
         )}
 
-        {!loading && report && (
+        {!loading && !comparePair && report && (
           <>
             <div className="no-print mx-auto mb-8 flex max-w-3xl items-center justify-between">
               <button
@@ -291,12 +320,19 @@ export default function App() {
       {historyOpen && (
         <HistorySheet
           history={history}
+          compareBase={compareBase}
           onOpen={(entry) => {
+            setComparePair(null);
             setReport(entry.report);
             setHistoryOpen(false);
           }}
-          onDelete={(id) => setHistory(removeFromHistory(id))}
-          onClearAll={() => setHistory(clearHistory())}
+          onCompareClick={handleCompareClick}
+          onDelete={handleDelete}
+          onClearAll={() => {
+            setHistory(clearHistory());
+            setCompareBase(null);
+            setComparePair(null);
+          }}
           onClose={() => setHistoryOpen(false)}
         />
       )}
