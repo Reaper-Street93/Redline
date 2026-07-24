@@ -25,7 +25,7 @@ export function Clause({ text }) {
     );
   }
   return (
-    <blockquote className="clause text-[0.9rem] leading-relaxed text-ink/70">
+    <blockquote className="redlined text-[0.9rem] leading-relaxed text-ink/70">
       {text}
     </blockquote>
   );

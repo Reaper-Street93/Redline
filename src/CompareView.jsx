@@ -1,5 +1,5 @@
 import { formatWhen } from "./history.js";
-import { Label, microLink } from "./ui.jsx";
+import { Label, micro, microLink } from "./ui.jsx";
 import { assessmentOf, recommendationOf } from "./vocab.js";
 
 // Two numbers, side by side, with the better one in full ink and the other

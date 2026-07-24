@@ -3,3 +3,4 @@ dist
 .env
 *.pdf
 public/
+.check-bundle.mjs

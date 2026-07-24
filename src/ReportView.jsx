@@ -37,7 +37,7 @@ function AskCard({ ask, onCopy }) {
 
   return (
     <article
-      className={`border-t border-rule pt-5 ${muted ? "opacity-55" : ""}`}
+      className={`border-t border-rule py-5 ${muted ? "opacity-55" : ""}`}
     >
       <div className="grid gap-5 sm:grid-cols-[1fr_170px]">
         <div>
@@ -86,7 +86,7 @@ function AskCard({ ask, onCopy }) {
       </div>
 
       {open && (
-        <div className="mt-4 grid gap-4 pb-5">
+        <div className="mt-4 grid gap-4">
           <div>
             <Label className="mb-1.5">The clause</Label>
             <Clause text={ask.clause} />
@@ -111,7 +111,6 @@ function AskCard({ ask, onCopy }) {
           </div>
         </div>
       )}
-      {!open && <div className="pb-5" />}
     </article>
   );
 }

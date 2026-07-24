@@ -45,9 +45,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Contract quotes are set as indented serif with a redline in the margin —
-   the visual signature of the whole app. */
-.clause {
+/* Serif text behind a red margin rule — the visual signature of the whole app.
+   Named for the treatment rather than for contract clauses, because the chat
+   panel wears it too: it is how anything quoted or spoken in the document's
+   voice is set, as opposed to the interface's own voice. */
+.redlined {
   font-family: var(--font-serif);
   border-left: 2px solid var(--color-redline);
   padding-left: 0.875rem;

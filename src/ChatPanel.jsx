@@ -112,7 +112,7 @@ export default function ChatPanel({ report, profile, pdf, onClose }) {
                   {m.text}
                 </p>
               ) : (
-                <div key={i} className="clause">
+                <div key={i} className="redlined">
                   <p className="text-[0.95rem] leading-relaxed whitespace-pre-wrap">
                     {m.text}
                   </p>
