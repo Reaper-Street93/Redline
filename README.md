@@ -74,6 +74,11 @@ would be hardest to retrofit — see [CONTRACT.md](CONTRACT.md).
    [CONTRACT.md](CONTRACT.md), so it's guaranteed to parse. No regex, no
    hoping. The Gemini free tier means the whole thing runs at £0.
 
+Laid out so each file has one job: `schemas.js` holds the agreed output shapes,
+`prompts.js` everything said to the model, `server.js` only the routes and the
+plumbing. On the frontend, `vocab.js` is the single source of truth for what
+the report's enums are called and coloured, and `ui.jsx` the shared type tokens.
+
 ## The build, step by step
 
 The commit history is the project diary — each step was committed as it
@@ -94,6 +99,10 @@ happened:
 8. **Let people ask** — the chat panel.
 9. **Draw the legal line** — the pre-upload notice, the consent gate, the
    erase button, and the redaction pass.
+10. **Review it properly** — a pass with fresh eyes that found a page cap
+    silently passing anything that compressed its page tree, three components
+    that had drifted on what a verdict is called, a design token written out
+    thirty-eight times, and a comparison view that would have crashed on open.
 
 ## Run it locally
 
@@ -109,6 +118,17 @@ npm run dev            # frontend on :5173 (proxies /api to :3001)
 
 No API key yet? Set `MOCK_AI=1` in `.env` and the server returns a canned
 report, profile and chat reply, so the whole flow still works.
+
+```bash
+npm run check          # renders the real components and asserts on the output
+```
+
+`npm run build` proves the code parses, not that it works — it once happily
+built a comparison view that referenced an identifier it never imported, which
+would have thrown the moment two contracts were compared. `npm run check`
+bundles the components with the esbuild Vite already ships, renders them to
+static HTML and asserts on what comes out: no test framework, no new
+dependencies, about a second to run.
 
 ## Run it in production
 
