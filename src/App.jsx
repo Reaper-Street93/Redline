@@ -1,19 +1,33 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReportView from "./ReportView.jsx";
+import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
+import { fileToBase64, checkFile } from "./pdf.js";
 import { LogoMark, Wordmark } from "./Logo.jsx";
 
 export default function App() {
   const [file, setFile] = useState(null);
   const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [toast, setToast] = useState(null);
+  const [status, setStatus] = useState(null);
   const fileInputRef = useRef(null);
 
   // index.html sets the class before first paint; this just mirrors it.
   const [dark, setDark] = useState(() =>
     document.documentElement.classList.contains("dark")
   );
+
+  // Ask the server what mode it's in, so the UI can warn about a missing key
+  // up front rather than after someone has picked a file.
+  useEffect(() => {
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
 
   function toggleTheme() {
     const next = !dark;
@@ -38,12 +52,48 @@ export default function App() {
 
   function handleFile(picked) {
     if (!picked) return;
+    const problem = checkFile(picked);
+    if (problem) {
+      setError(problem);
+      setFile(null);
+      return;
+    }
+    setError(null);
     setFile(picked);
+  }
+
+  async function analyse() {
+    const problem = checkFile(file);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setReport(null);
+    try {
+      const pdf = await fileToBase64(file);
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pdf }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.report) {
+        throw new Error(data.error || "Something went wrong. Try again.");
+      }
+      setReport(data.report);
+    } catch (err) {
+      setError(err.message || "Could not reach the server. Try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function reset() {
     setReport(null);
     setFile(null);
+    setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -60,18 +110,27 @@ export default function App() {
             <LogoMark />
             <Wordmark />
           </button>
-          <button
-            onClick={toggleTheme}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
-            title="Switch theme"
-          >
-            {dark ? "light" : "dark"}
-          </button>
+          <div className="flex items-center gap-5">
+            {status?.mock && (
+              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-watch">
+                mock mode
+              </span>
+            )}
+            <button
+              onClick={toggleTheme}
+              className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+              title="Switch theme"
+            >
+              {dark ? "light" : "dark"}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-5 py-10">
-        {!report && (
+        {loading && <Reading filename={file?.name} />}
+
+        {!loading && !report && (
           <>
             <section className="mx-auto max-w-2xl text-center">
               <h1 className="font-serif text-4xl leading-[1.15] sm:text-5xl">
@@ -124,11 +183,26 @@ export default function App() {
                 onChange={(e) => handleFile(e.target.files?.[0])}
               />
 
+              {error && (
+                <p className="mt-4 border-l-2 border-redline bg-redline/[0.05] px-4 py-3 text-sm leading-relaxed">
+                  {error}
+                </p>
+              )}
+
+              {status && !status.ready && (
+                <p className="mt-4 border-l-2 border-watch bg-watch/[0.06] px-4 py-3 text-sm leading-relaxed">
+                  No API key is set on the server, so analysis will fail. Add a
+                  free <code className="font-mono text-xs">GEMINI_API_KEY</code>,
+                  or set <code className="font-mono text-xs">MOCK_AI=1</code> to
+                  try the flow without one.
+                </p>
+              )}
+
               <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
                 <button
-                  disabled
-                  className="border-2 border-ink/25 px-6 py-2.5 font-mono text-xs uppercase tracking-[0.2em] text-ink/25"
-                  title="Not wired up yet"
+                  onClick={analyse}
+                  disabled={!file}
+                  className="border-2 border-ink px-6 py-2.5 font-mono text-xs uppercase tracking-[0.2em] transition-colors hover:bg-ink hover:text-stock disabled:border-ink/25 disabled:text-ink/25 disabled:hover:bg-transparent disabled:hover:text-ink/25"
                 >
                   Analyse
                 </button>
@@ -143,7 +217,7 @@ export default function App() {
           </>
         )}
 
-        {report && (
+        {!loading && report && (
           <>
             <div className="no-print mx-auto mb-8 flex max-w-3xl items-center justify-between">
               <button
