@@ -7,6 +7,7 @@ import { downloadCsv } from "./csv.js";
 import ProfileSheet from "./ProfileSheet.jsx";
 import HistorySheet from "./HistorySheet.jsx";
 import CompareView from "./CompareView.jsx";
+import ChatPanel from "./ChatPanel.jsx";
 import {
   loadHistory,
   addToHistory,
@@ -37,6 +38,10 @@ export default function App() {
   // contract to read against it.
   const [compareBase, setCompareBase] = useState(null);
   const [comparePair, setComparePair] = useState(null);
+  // Kept only in memory, only for this session: it lets follow-up questions be
+  // answered from the document rather than from the report about it.
+  const [pdfB64, setPdfB64] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const hasProfile = profileIsUseful(profile);
@@ -99,6 +104,7 @@ export default function App() {
     setReport(null);
     try {
       const pdf = await fileToBase64(file);
+      setPdfB64(pdf);
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,6 +142,8 @@ export default function App() {
   }
 
   function reset() {
+    setPdfB64(null);
+    setChatOpen(false);
     setComparePair(null);
     setCompareBase(null);
     setReport(null);
@@ -308,6 +316,12 @@ export default function App() {
               </button>
               <div className="flex gap-5">
                 <button
+                  onClick={() => setChatOpen(true)}
+                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-redline underline-offset-4 hover:underline"
+                >
+                  ask about it
+                </button>
+                <button
                   onClick={() => downloadCsv(report)}
                   className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
                 >
@@ -326,12 +340,22 @@ export default function App() {
         )}
       </main>
 
+      {chatOpen && report && (
+        <ChatPanel
+          report={report}
+          profile={hasProfile ? profile : null}
+          pdf={pdfB64}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
+
       {historyOpen && (
         <HistorySheet
           history={history}
           compareBase={compareBase}
           onOpen={(entry) => {
             setComparePair(null);
+            setPdfB64(null);
             setReport(entry.report);
             setHistoryOpen(false);
           }}

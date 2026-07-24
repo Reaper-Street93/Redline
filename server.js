@@ -311,18 +311,23 @@ function finishReport(report) {
 // ── Rate limiting ───────────────────────────────────────────────────────────
 // The Gemini key is a free-tier key with a daily quota — a public endpoint with
 // no brakes would let one visitor burn the whole allowance. Sliding window per
-// IP, plus a global daily ceiling as the backstop. Contracts are heavier than
-// a paste of text, so the window is tighter than Distil's.
+// IP per bucket, plus a global daily ceiling as the backstop. Reading a whole
+// contract is far heavier than answering one question about it, so the two get
+// separate allowances rather than competing for one.
 
 const WINDOW_MS = 10 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const MAX_PER_DAY_GLOBAL = 100;
+const MAX_PER_DAY_GLOBAL = 220;
 
-const hitsByIp = new Map();
+const BUCKETS = {
+  analyse: 5, // whole-document reads, per IP per window
+  chat: 30, // follow-up questions, per IP per window
+};
+
+const hitsByIp = new Map(); // "bucket:ip" -> timestamps
 let dailyCount = 0;
 let dailyCountDate = new Date().toDateString();
 
-function rateLimited(ip) {
+function rateLimited(bucket, ip) {
   const now = Date.now();
 
   const today = new Date().toDateString();
@@ -332,20 +337,21 @@ function rateLimited(ip) {
   }
   if (dailyCount >= MAX_PER_DAY_GLOBAL) return "day";
 
-  const recent = (hitsByIp.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= MAX_PER_WINDOW) {
-    hitsByIp.set(ip, recent);
+  const key = `${bucket}:${ip}`;
+  const recent = (hitsByIp.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= BUCKETS[bucket]) {
+    hitsByIp.set(key, recent);
     return "window";
   }
 
   recent.push(now);
-  hitsByIp.set(ip, recent);
+  hitsByIp.set(key, recent);
   dailyCount += 1;
 
   // Don't let the map grow forever on a long-running server.
   if (hitsByIp.size > 5000) {
-    for (const [key, times] of hitsByIp) {
-      if (times.every((t) => now - t >= WINDOW_MS)) hitsByIp.delete(key);
+    for (const [k, times] of hitsByIp) {
+      if (times.every((t) => now - t >= WINDOW_MS)) hitsByIp.delete(k);
     }
   }
   return null;
@@ -398,7 +404,7 @@ app.post("/api/analyze", async (req, res) => {
   const invalid = validatePdf(pdf);
   if (invalid) return res.status(400).json({ error: invalid });
 
-  const limited = rateLimited(req.ip);
+  const limited = rateLimited("analyse", req.ip);
   if (limited === "window") {
     return res.status(429).json({
       error: "Too many contracts in a short burst — wait a few minutes and try again.",
@@ -475,7 +481,7 @@ app.post("/api/profile", async (req, res) => {
   const invalid = validatePdf(pdf);
   if (invalid) return res.status(400).json({ error: invalid });
 
-  const limited = rateLimited(req.ip);
+  const limited = rateLimited("analyse", req.ip);
   if (limited) {
     return res.status(429).json({
       error:
@@ -502,6 +508,122 @@ app.post("/api/profile", async (req, res) => {
     const detail = (err?.message ?? "").slice(0, 200);
     res.status(isBusy(err) ? 503 : 502).json({
       error: `Reading the CV failed${detail ? `: ${detail}` : ""}. You can fill the profile in by hand.`,
+    });
+  }
+});
+
+// ── Follow-up questions ─────────────────────────────────────────────────────
+// Chat is grounded twice over: on the report, which is always available, and
+// on the PDF itself when the browser still has it from this session. History
+// entries only carry the report, so answers there are limited to the clauses
+// the report already quoted — and the model is told to say so.
+
+const MAX_TURNS = 24;
+const MAX_QUESTION_CHARS = 1500;
+
+const chatPrompt = (report, profile, messages, hasPdf) => `You are helping someone understand a job contract they have been offered. A report on it has already been produced and is below. ${
+  hasPdf
+    ? "The full contract PDF is attached — prefer it over the report when they disagree, and quote from it directly."
+    : "The contract PDF is NOT available in this session, only the report. Answer from the clauses the report quotes. If the answer would need a part of the contract the report never quoted, say so plainly and suggest they re-upload the PDF rather than guessing."
+}
+
+THE REPORT:
+${JSON.stringify(report)}
+
+${profile ? `THE READER'S PROFILE:\n${JSON.stringify(profile)}` : "No profile was supplied for this reader."}
+
+How to answer:
+
+- Short. Two or three sentences unless they ask for more. No preamble, no restating the question.
+- Quote the contract's own words when they are what settles the question.
+- If they ask you to draft an email or a message, write the thing itself — no "here's a draft you could use".
+- You explain what the document says and what is unusual about it. You do not advise on whether a term is lawful or enforceable, and you never predict how a court would rule. If a question needs a lawyer, say so in one sentence and point at Acas or Citizens Advice.
+- Never invent a clause. If the contract does not cover something, that is the answer.
+- If they ask about something the contract has nothing to do with, say that's outside what you can help with here.
+
+CONVERSATION SO FAR:
+${messages
+  .map((m) => `${m.role === "user" ? "THEM" : "YOU"}: ${m.text}`)
+  .join("\n\n")}
+
+YOU:`;
+
+app.post("/api/chat", async (req, res) => {
+  const { messages, report, profile, pdf } = req.body ?? {};
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: "No question was asked." });
+  }
+  if (messages.length > MAX_TURNS) {
+    return res.status(400).json({
+      error: "This conversation has run long — start a fresh one to keep the answers sharp.",
+    });
+  }
+  const last = messages.at(-1);
+  if (last?.role !== "user" || !last.text?.trim()) {
+    return res.status(400).json({ error: "No question was asked." });
+  }
+  if (last.text.length > MAX_QUESTION_CHARS) {
+    return res.status(400).json({ error: "That question is too long — trim it down." });
+  }
+  if (!report?.document) {
+    return res.status(400).json({ error: "There's no report to ask about yet." });
+  }
+  // A PDF is optional here, but if one is sent it still has to be a real one.
+  if (pdf) {
+    const invalid = validatePdf(pdf);
+    if (invalid) return res.status(400).json({ error: invalid });
+  }
+
+  const limited = rateLimited("chat", req.ip);
+  if (limited) {
+    return res.status(429).json({
+      error:
+        limited === "day"
+          ? "Redline has hit its free-tier budget for today. Come back tomorrow."
+          : "Too many questions in a short burst — wait a couple of minutes.",
+    });
+  }
+
+  if (MOCK_AI) {
+    return res.json({
+      reply: `MOCK MODE — no API call was made. You asked: "${last.text.trim()}". With a real key, this would be answered from ${
+        pdf ? "the contract PDF itself" : "the report's quoted clauses"
+      }.`,
+    });
+  }
+
+  if (!HAS_KEY) {
+    return res.status(503).json({
+      error: "No GEMINI_API_KEY is set on the server, so there's nothing to ask.",
+    });
+  }
+
+  try {
+    const parts = [];
+    if (pdf) parts.push({ inlineData: { mimeType: "application/pdf", data: pdf } });
+    parts.push({ text: chatPrompt(report, profile ?? null, messages, Boolean(pdf)) });
+
+    let lastErr;
+    for (const model of MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: "user", parts }],
+        });
+        return res.json({ reply: response.text.trim() });
+      } catch (err) {
+        lastErr = err;
+        if (isBusy(err)) continue;
+        throw err;
+      }
+    }
+    throw lastErr;
+  } catch (err) {
+    console.error(err);
+    const detail = (err?.message ?? "").slice(0, 200);
+    res.status(isBusy(err) ? 503 : 502).json({
+      error: `Couldn't answer that${detail ? `: ${detail}` : ". Try again."}`,
     });
   }
 });
