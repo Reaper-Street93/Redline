@@ -174,6 +174,41 @@ const REPORT_SCHEMA = {
   additionalProperties: false,
 };
 
+const PROFILE_SCHEMA = {
+  type: "object",
+  properties: {
+    current_role: { type: "string", description: "Their most recent job title." },
+    years_experience: {
+      type: "integer",
+      description: "Total relevant years of experience, rounded. 0 if it cannot be worked out.",
+    },
+    skills: {
+      type: "array",
+      description: "5-12 concrete skills, tools or systems named in the CV. No soft-skill filler.",
+      items: { type: "string" },
+    },
+    achievements: {
+      type: "array",
+      description:
+        "3-6 achievements, quoted or tightened from the CV. Prefer ones carrying a number — those are the negotiating cards.",
+      items: { type: "string" },
+    },
+    current_salary: { type: "string", description: "Only if the CV states it. Otherwise empty string." },
+    target_salary: { type: "string", description: "Only if the CV states it. Otherwise empty string." },
+    must_haves: {
+      type: "array",
+      description: "0-5 working conditions the CV signals they care about. Empty if it says nothing.",
+      items: { type: "string" },
+    },
+    notes: { type: "string", description: "One or two lines the fields above don't capture. May be empty." },
+  },
+  required: [
+    "current_role", "years_experience", "skills", "achievements",
+    "current_salary", "target_salary", "must_haves", "notes",
+  ],
+  additionalProperties: false,
+};
+
 // ── Prompts ─────────────────────────────────────────────────────────────────
 
 const NO_PROFILE =
@@ -204,6 +239,13 @@ Where the line is — this matters:
 - You describe what the document says and what is unusual about it. You do NOT advise on whether a term is lawful, enforceable, or how a court would rule. If something looks legally serious, put it in "flags" with high severity and let the reader take it to a professional.
 - Never soften a genuinely onerous term to be encouraging, and never manufacture alarm to seem useful. Say what is there.
 - If the attached PDF is not an employment or engagement contract at all, set contract_type to "other" and say so as the first sentence of the summary rather than inventing an analysis.`;
+
+const cvPrompt = `The attached PDF is a CV. Turn it into a structured profile following the schema.
+
+- Take skills and achievements from what the CV actually claims. Don't editorialise, don't inflate, don't invent numbers.
+- Achievements carrying a measurable result are worth more than duties, because they are what the reader will point at in a negotiation. Prefer them.
+- Leave salary fields as empty strings unless the CV states a figure outright.
+- If the PDF is not a CV, return the schema with empty strings, empty arrays, years_experience 0, and say so in notes.`;
 
 // ── Model plumbing ──────────────────────────────────────────────────────────
 
@@ -401,6 +443,65 @@ app.post("/api/analyze", async (req, res) => {
     const detail = (err?.message ?? "").slice(0, 200);
     res.status(502).json({
       error: `Reading the contract failed${detail ? `: ${detail}` : ". Try again."}`,
+    });
+  }
+});
+
+const MOCK_PROFILE = {
+  current_role: "Senior Customer Support Engineer",
+  years_experience: 6,
+  skills: [
+    "Zendesk administration",
+    "SQL",
+    "React",
+    "Escalation management",
+    "API troubleshooting",
+    "Runbook authoring",
+  ],
+  achievements: [
+    "Cut first-response time from 14h to 3h across a nine-person team",
+    "Built the escalation runbook now used by the whole support org",
+    "Reduced repeat contacts by 22% by rewriting the top 20 help articles",
+  ],
+  current_salary: "£46,000",
+  target_salary: "£58,000",
+  must_haves: ["Two days a week at home", "No weekend on-call"],
+  notes: "MOCK MODE — no API call was made.",
+};
+
+app.post("/api/profile", async (req, res) => {
+  const { pdf } = req.body ?? {};
+
+  const invalid = validatePdf(pdf);
+  if (invalid) return res.status(400).json({ error: invalid });
+
+  const limited = rateLimited(req.ip);
+  if (limited) {
+    return res.status(429).json({
+      error:
+        limited === "day"
+          ? "Redline has hit its free-tier budget for today. You can still fill the profile in by hand."
+          : "Too many uploads in a short burst — wait a few minutes, or fill the profile in by hand.",
+    });
+  }
+
+  if (MOCK_AI) return res.json({ profile: MOCK_PROFILE });
+
+  if (!HAS_KEY) {
+    return res.status(503).json({
+      error: "No GEMINI_API_KEY is set on the server. Fill the profile in by hand instead.",
+    });
+  }
+
+  try {
+    const profile = await callModel({ prompt: cvPrompt, pdf, schema: PROFILE_SCHEMA });
+    profile.years_experience = clamp(profile.years_experience, 0, 60);
+    res.json({ profile });
+  } catch (err) {
+    console.error(err);
+    const detail = (err?.message ?? "").slice(0, 200);
+    res.status(isBusy(err) ? 503 : 502).json({
+      error: `Reading the CV failed${detail ? `: ${detail}` : ""}. You can fill the profile in by hand.`,
     });
   }
 });

@@ -3,6 +3,13 @@ import ReportView from "./ReportView.jsx";
 import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
 import { fileToBase64, checkFile } from "./pdf.js";
+import ProfileSheet from "./ProfileSheet.jsx";
+import {
+  loadProfile,
+  saveProfile,
+  clearProfile,
+  profileIsUseful,
+} from "./profile.js";
 import { LogoMark, Wordmark } from "./Logo.jsx";
 
 export default function App() {
@@ -13,7 +20,11 @@ export default function App() {
   const [dragging, setDragging] = useState(false);
   const [toast, setToast] = useState(null);
   const [status, setStatus] = useState(null);
+  const [profile, setProfile] = useState(loadProfile);
+  const [profileOpen, setProfileOpen] = useState(false);
   const fileInputRef = useRef(null);
+
+  const hasProfile = profileIsUseful(profile);
 
   // index.html sets the class before first paint; this just mirrors it.
   const [dark, setDark] = useState(() =>
@@ -76,7 +87,7 @@ export default function App() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf }),
+        body: JSON.stringify({ pdf, profile: hasProfile ? profile : null }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.report) {
@@ -111,6 +122,15 @@ export default function App() {
             <Wordmark />
           </button>
           <div className="flex items-center gap-5">
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+            >
+              <span
+                className={`h-1.5 w-1.5 ${hasProfile ? "bg-good" : "bg-rule"}`}
+              />
+              {hasProfile ? "your profile" : "add your profile"}
+            </button>
             {status?.mock && (
               <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-watch">
                 mock mode
@@ -198,6 +218,20 @@ export default function App() {
                 </p>
               )}
 
+              {!hasProfile && (
+                <p className="mt-4 border-l-2 border-rule px-4 py-3 text-sm leading-relaxed text-ink/60">
+                  Redline works without one, but it can only tell you what to
+                  ask for — not what you can point at to win it.{" "}
+                  <button
+                    onClick={() => setProfileOpen(true)}
+                    className="text-redline underline underline-offset-4"
+                  >
+                    Add your profile
+                  </button>{" "}
+                  and it uses your own track record as the argument.
+                </p>
+              )}
+
               <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
                 <button
                   onClick={analyse}
@@ -237,6 +271,26 @@ export default function App() {
           </>
         )}
       </main>
+
+      {profileOpen && (
+        <ProfileSheet
+          profile={profile}
+          onSave={(next) => {
+            setProfile(saveProfile(next));
+            setProfileOpen(false);
+            setToast("Profile saved");
+            setTimeout(() => setToast(null), 1600);
+          }}
+          onClear={() => {
+            clearProfile();
+            setProfile(null);
+            setProfileOpen(false);
+            setToast("Profile forgotten");
+            setTimeout(() => setToast(null), 1600);
+          }}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
 
       {toast && (
         <div className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 border border-ink bg-stock px-4 py-2 font-mono text-xs uppercase tracking-[0.18em]">
