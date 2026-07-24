@@ -4,6 +4,13 @@ import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
 import { fileToBase64, checkFile } from "./pdf.js";
 import ProfileSheet from "./ProfileSheet.jsx";
+import HistorySheet from "./HistorySheet.jsx";
+import {
+  loadHistory,
+  addToHistory,
+  removeFromHistory,
+  clearHistory,
+} from "./history.js";
 import {
   loadProfile,
   saveProfile,
@@ -22,6 +29,8 @@ export default function App() {
   const [status, setStatus] = useState(null);
   const [profile, setProfile] = useState(loadProfile);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [history, setHistory] = useState(loadHistory);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const hasProfile = profileIsUseful(profile);
@@ -94,6 +103,7 @@ export default function App() {
         throw new Error(data.error || "Something went wrong. Try again.");
       }
       setReport(data.report);
+      setHistory(addToHistory(data.report, file.name));
     } catch (err) {
       setError(err.message || "Could not reach the server. Try again.");
     } finally {
@@ -122,6 +132,12 @@ export default function App() {
             <Wordmark />
           </button>
           <div className="flex items-center gap-5">
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+            >
+              history{history.length ? ` (${history.length})` : ""}
+            </button>
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
@@ -271,6 +287,19 @@ export default function App() {
           </>
         )}
       </main>
+
+      {historyOpen && (
+        <HistorySheet
+          history={history}
+          onOpen={(entry) => {
+            setReport(entry.report);
+            setHistoryOpen(false);
+          }}
+          onDelete={(id) => setHistory(removeFromHistory(id))}
+          onClearAll={() => setHistory(clearHistory())}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
 
       {profileOpen && (
         <ProfileSheet
