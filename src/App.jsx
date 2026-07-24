@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReportView from "./ReportView.jsx";
 import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
-import { fileToBase64, checkFile } from "./pdf.js";
+import { fileToBase64, checkFile, formatSize } from "./pdf.js";
 import { downloadCsv } from "./csv.js";
 import { redactProfile } from "./redact.js";
 import ProfileSheet from "./ProfileSheet.jsx";
@@ -277,7 +277,7 @@ export default function App() {
                 </p>
                 <p className="mt-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40">
                   {file
-                    ? `${(file.size / 1024 / 1024).toFixed(1)} MB — ready`
+                    ? `${formatSize(file.size)} — ready`
                     : "PDF · up to 10 MB · nothing is stored"}
                 </p>
               </div>

@@ -14,13 +14,20 @@ export function fileToBase64(file) {
 
 // Catch the obvious problems in the browser, so the user hears about them
 // immediately instead of after a round trip.
+// A 37 KB contract reading "0.0 MB" looks broken. Show the unit that fits.
+export function formatSize(bytes) {
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function checkFile(file) {
   if (!file) return "Pick a contract first.";
   if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
     return "Redline reads PDFs. Export the contract as a PDF and try again.";
   }
   if (file.size > MAX_PDF_BYTES) {
-    return `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is ${
+    return `That file is ${formatSize(file.size)} — the limit is ${
       MAX_PDF_BYTES / 1024 / 1024
     } MB.`;
   }
