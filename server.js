@@ -84,13 +84,14 @@ const REPORT_SCHEMA = {
           description: "2-5 places the reader's experience meets or beats what the role asks for.",
           items: { type: "string" },
         },
-        gaps: {
+        experience_gaps: {
           type: "array",
-          description: "0-5 places the role asks for more than the profile shows.",
+          description:
+            "0-5 things THIS ROLE REQUIRES THAT THE READER'S CV DOES NOT EVIDENCE. Every entry must name a duty, system or seniority marker from the contract and say the reader has not shown it. Never mention salary, notice, covenants, hours or location here — those are properties of the offer, not of the reader. Empty array if their CV covers everything the role asks for.",
           items: { type: "string" },
         },
       },
-      required: ["score", "verdict", "rationale", "matches", "gaps"],
+      required: ["score", "verdict", "rationale", "matches", "experience_gaps"],
       additionalProperties: false,
     },
     overall: {
@@ -116,7 +117,11 @@ const REPORT_SCHEMA = {
         type: "object",
         properties: {
           rank: { type: "integer", description: "1 = ask for this first." },
-          title: { type: "string", description: "The ask itself, specific and numeric where possible." },
+          title: {
+            type: "string",
+            description:
+              "The ask itself, specific and numeric where possible, e.g. 'Move base salary to £58,000'. Sentence case, not Title Case.",
+          },
           clause: {
             type: "string",
             description:
@@ -130,7 +135,12 @@ const REPORT_SCHEMA = {
           },
           likelihood: { type: "integer", description: "0-100. Odds an employer says yes to this ask." },
           impact: { type: "integer", description: "1-5. How much the reader's working life improves if they do." },
-          priority: { type: "string", enum: ["must", "should", "nice"] },
+          priority: {
+            type: "string",
+            enum: ["must", "should", "nice"],
+            description:
+              "Must agree with impact: impact 5 is 'must', impact 4 is 'must' or 'should', impact 1-2 is never above 'nice'.",
+          },
           should_ask: {
             type: "boolean",
             description:
@@ -231,6 +241,8 @@ How to work:
 - Assess against ordinary market practice for this kind of role in the stated jurisdiction. If no governing law is stated, assume the UK and say so.
 - The "asks" are the point of this report. Rank them by what is actually worth spending negotiating capital on — impact first, then odds. A high-impact ask at 45% beats an easy win at 90% that changes nothing.
 - Ground every "leverage" line in something concrete from the reader's profile. If you cannot, that ask should not be ranked first.
+- Keep "priority" honest against "impact": something you scored 4 or 5 for impact is not a "nice to have". Rank, priority and impact should tell the same story.
+- "fit.experience_gaps" answers one question only: what does this job need that this person has not shown they can do? Salary, notice, covenants, hours and location are facts about the offer and belong in asks and flags. If their CV covers everything the role asks for, return an empty array — that is a real and common answer, not a failure to find something.
 - "suggested_wording" must be something the reader could paste into an email today: polite, specific, no throat-clearing. When should_ask is false, use that field to explain briefly why it is better left alone.
 - "missing" matters as much as what is there. A contract that never mentions on-call, or notice, or a salary review, is telling you something.
 
@@ -293,6 +305,17 @@ async function callModel({ prompt, pdf, schema }) {
 // Schemas can't enforce numeric ranges or rank order — tidy both.
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(n) || 0)));
 
+// A schema can ask for priority and impact to agree, but it can't enforce it,
+// and the model does drift — a 4-out-of-5 impact labelled "nice to have" tells
+// the reader to skip the ask that would change their year. So the invariant is
+// applied here instead of merely requested.
+function alignPriority(ask) {
+  if (ask.impact >= 5) return "must";
+  if (ask.impact === 4 && ask.priority === "nice") return "should";
+  if (ask.impact <= 2 && ask.priority !== "nice") return "nice";
+  return ask.priority;
+}
+
 function finishReport(report) {
   report.asks ??= [];
   report.asks.sort((a, b) => a.rank - b.rank);
@@ -300,6 +323,7 @@ function finishReport(report) {
     ask.rank = i + 1;
     ask.likelihood = clamp(ask.likelihood, 0, 100);
     ask.impact = clamp(ask.impact, 1, 5);
+    ask.priority = alignPriority(ask);
   });
   if (report.fit) report.fit.score = clamp(report.fit.score, 0, 100);
   if (report.overall) {

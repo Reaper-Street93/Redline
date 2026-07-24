@@ -50,7 +50,7 @@ export function reportToCsv(report) {
   push("Verdict", "Fit score", report.fit?.score, report.fit?.verdict, "", "", report.fit?.rationale);
 
   for (const match of report.fit?.matches ?? []) push("Fit — strength", match);
-  for (const gap of report.fit?.gaps ?? []) push("Fit — gap", gap);
+  for (const gap of report.fit?.experience_gaps ?? report.fit?.gaps ?? []) push("Fit — experience gap", gap);
 
   for (const term of report.key_terms ?? []) {
     push("Term", term.label, term.value, term.assessment, "", "", term.note, term.verbatim);

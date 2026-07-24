@@ -77,7 +77,7 @@ One report, as JSON in this exact shape:
     "verdict": "strong",
     "rationale": "One or two sentences on how you sit against this role.",
     "matches": ["Six years against the five the role asks for."],
-    "gaps": ["No named experience of the SaaS billing stack in clause 3.2."]
+    "experience_gaps": ["No named experience of the SaaS billing stack in clause 3.2."]
   },
   "overall": {
     "fairness_score": 64,
@@ -132,7 +132,7 @@ One report, as JSON in this exact shape:
 | `fit.score` | integer | 0–100, how well your profile matches the role |
 | `fit.verdict` | string | One of `strong`, `good`, `stretch`, `mismatch` |
 | `fit.matches` | array | 2–5 places your experience meets or beats the role |
-| `fit.gaps` | array | 0–5 places the role asks for more than your profile shows |
+| `fit.experience_gaps` | array | 0–5 things the role requires that the CV doesn't evidence. Never facts about the offer — pay, notice and covenants live in `asks` and `flags` |
 | `overall.fairness_score` | integer | 0–100, how the terms sit against ordinary market practice |
 | `overall.recommendation` | string | One of `sign`, `negotiate_then_sign`, `push_back_hard`, `walk_away` |
 | `asks` | array | 3–7 negotiation points, ranked by what's worth spending capital on |

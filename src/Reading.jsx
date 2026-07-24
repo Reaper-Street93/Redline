@@ -41,8 +41,8 @@ export default function Reading({ filename }) {
         {filename}
       </p>
       <p className="mx-auto mt-8 max-w-xs text-xs leading-relaxed text-ink/45">
-        Usually twenty to forty seconds. The file is held in memory for this one
-        request and never written to disk.
+        A minute or so, sometimes longer on a busy free tier. The file is held
+        in memory for this one request and never written to disk.
       </p>
     </section>
   );

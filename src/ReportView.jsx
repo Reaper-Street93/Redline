@@ -221,6 +221,8 @@ function StatCell({ label, children, sub }) {
 
 export default function ReportView({ report, onCopyText }) {
   const doc = report.document ?? {};
+  // Reports saved before the field was renamed carry `gaps`.
+  const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
   const rec = RECOMMENDATION[report.overall?.recommendation] ?? {
     label: report.overall?.recommendation ?? "—",
     tone: "text-ink",
@@ -323,14 +325,14 @@ export default function ReportView({ report, onCopyText }) {
             </ul>
           </div>
           <div>
-            <Label className="mb-2">Where they may push</Label>
+            <Label className="mb-2">Where you’re light</Label>
             <ul className="grid gap-2">
-              {(report.fit?.gaps ?? []).length === 0 && (
+              {gaps.length === 0 && (
                 <li className="text-sm text-ink/50">
-                  Nothing in the contract asks for more than your profile shows.
+                  Nothing this role asks for is missing from your record.
                 </li>
               )}
-              {(report.fit?.gaps ?? []).map((g, i) => (
+              {gaps.map((g, i) => (
                 <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 bg-watch" />
                   {g}

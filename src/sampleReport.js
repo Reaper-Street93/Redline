@@ -118,8 +118,8 @@ export const SAMPLE_REPORT = {
       "Zendesk administration is named in clause 3.1 and you have run it at team scale.",
       "Cutting first-response time from 14h to 3h is a directly comparable result.",
     ],
-    gaps: [
-      "The contract mentions supporting a billing stack you have not named in your profile.",
+    experience_gaps: [
+      "Clause 3.1 names the SaaS billing platform, which your CV never mentions.",
       "No formal team-lead title, though the achievements read as lead work.",
     ],
   },
