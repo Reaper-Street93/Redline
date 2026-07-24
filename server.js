@@ -1,3 +1,4 @@
+import zlib from "node:zlib";
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import { MAX_PDF_BYTES, MAX_PDF_PAGES, MAX_BODY } from "./limits.js";
@@ -387,11 +388,51 @@ function rateLimited(bucket, ip) {
 // Cheap way to refuse a renamed .docx before spending a model call on it.
 const looksLikePdf = (b64) => b64.startsWith("JVBER");
 
-// Rough page count without a PDF library: every page is one "/Type /Page"
-// object. Close enough to refuse a 400-page merger agreement.
+// Every page in a PDF is one "/Type /Page" object, so counting them needs no
+// PDF library. The catch: since PDF 1.5 those objects are often packed into
+// Flate-compressed object streams, where a regex over the raw bytes finds
+// nothing at all — and a page cap whose failure mode is "allow" is worse than
+// no cap, because it reads as protection that isn't there. A 60-page contract
+// is only ~80 KB, so the byte cap never catches book-length documents; this is
+// the check that has to work.
+const PAGE_OBJECT = /\/Type\s*\/Page[^s]/g;
+
+// Inflating a stream can expand it enormously, so the pass stops at a budget
+// rather than trusting a stranger's file to be reasonable.
+const INFLATE_BUDGET = 32 * 1024 * 1024;
+
+function countPagesInCompressedStreams(buffer) {
+  let found = 0;
+  let spent = 0;
+  let at = 0;
+
+  while ((at = buffer.indexOf("stream", at)) !== -1) {
+    // The `stream` keyword is followed by CRLF or LF, then the raw bytes.
+    let start = at + "stream".length;
+    if (buffer[start] === 0x0d) start += 1;
+    if (buffer[start] === 0x0a) start += 1;
+
+    const end = buffer.indexOf("endstream", start);
+    if (end === -1) break;
+    at = end;
+
+    try {
+      const inflated = zlib.inflateSync(buffer.subarray(start, end));
+      spent += inflated.length;
+      found += inflated.toString("latin1").match(PAGE_OBJECT)?.length ?? 0;
+    } catch {
+      // Not Flate-compressed, or damaged. Nothing to learn from this one.
+    }
+    if (spent > INFLATE_BUDGET) break;
+  }
+  return found;
+}
+
 function countPages(buffer) {
-  const matches = buffer.toString("latin1").match(/\/Type\s*\/Page[^s]/g);
-  return matches?.length ?? 0;
+  const inTheClear = buffer.toString("latin1").match(PAGE_OBJECT)?.length ?? 0;
+  // Most writers leave the page tree readable. Only pay for decompression when
+  // they haven't.
+  return inTheClear > 0 ? inTheClear : countPagesInCompressedStreams(buffer);
 }
 
 function validatePdf(pdf) {
