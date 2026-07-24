@@ -1,5 +1,6 @@
 import { formatWhen } from "./history.js";
 import { recommendationOf } from "./vocab.js";
+import { micro } from "./ui.jsx";
 
 export default function HistorySheet({
   history,
@@ -28,7 +29,7 @@ export default function HistorySheet({
           </div>
           <button
             onClick={onClose}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 hover:text-redline"
+            className={`${micro} text-ink/45 hover:text-redline`}
           >
             close
           </button>
@@ -58,11 +59,11 @@ export default function HistorySheet({
                   className="block w-full text-left"
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-ink/45">
+                    <span className={`${micro} text-ink/45`}>
                       {formatWhen(entry.at)}
                     </span>
                     <span
-                      className={`font-mono text-[0.625rem] uppercase tracking-[0.16em] ${rec.tone}`}
+                      className={`${micro} ${rec.tone}`}
                     >
                       {rec.short}
                     </span>
@@ -74,7 +75,7 @@ export default function HistorySheet({
                     {doc.employer}
                     {entry.filename ? ` · ${entry.filename}` : ""}
                   </p>
-                  <div className="mt-2 flex gap-5 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-ink/45">
+                  <div className={`mt-2 flex gap-5 ${micro} text-ink/45`}>
                     <span>
                       fairness {entry.report?.overall?.fairness_score}
                     </span>
@@ -86,7 +87,7 @@ export default function HistorySheet({
                 <div className="mt-3 flex gap-4">
                   <button
                     onClick={() => onCompareClick(entry)}
-                    className={`font-mono text-[0.625rem] uppercase tracking-[0.16em] underline-offset-4 hover:text-redline hover:underline ${
+                    className={`${micro} underline-offset-4 hover:text-redline hover:underline ${
                       selected ? "text-redline" : "text-ink/45"
                     }`}
                   >
@@ -94,7 +95,7 @@ export default function HistorySheet({
                   </button>
                   <button
                     onClick={() => onDelete(entry.id)}
-                    className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-ink/35 underline-offset-4 hover:text-redline hover:underline"
+                    className={`${micro} text-ink/35 underline-offset-4 hover:text-redline hover:underline`}
                   >
                     delete
                   </button>
@@ -108,7 +109,7 @@ export default function HistorySheet({
           <footer className="sticky bottom-0 mt-auto border-t border-rule bg-stock px-6 py-4">
             <button
               onClick={onClearAll}
-              className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40 hover:text-redline"
+              className={`${micro} text-ink/40 hover:text-redline`}
             >
               delete everything
             </button>

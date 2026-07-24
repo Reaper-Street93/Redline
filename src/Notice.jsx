@@ -1,3 +1,4 @@
+import { micro } from "./ui.jsx";
 // The four things someone genuinely needs to know before dropping an
 // employment contract into a website. Shown as a gate the first time, and
 // readable any time afterwards from the footer.
@@ -31,7 +32,7 @@ export default function Notice({ mode, onAccept, onClose, onEraseAll }) {
       />
       <div className="relative max-h-[88dvh] w-full max-w-xl overflow-y-auto border border-ink bg-stock">
         <header className="border-b border-rule px-7 py-5">
-          <div className="font-mono text-[0.625rem] uppercase tracking-[0.22em] text-redline">
+          <div className={`${micro} text-redline`}>
             Before you upload
           </div>
           <h2 className="mt-2 font-serif text-2xl leading-snug">
@@ -79,7 +80,7 @@ export default function Notice({ mode, onAccept, onClose, onEraseAll }) {
             <>
               <button
                 onClick={onEraseAll}
-                className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40 hover:text-redline"
+                className={`${micro} text-ink/40 hover:text-redline`}
               >
                 erase everything
               </button>

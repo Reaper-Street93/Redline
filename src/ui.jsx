@@ -30,3 +30,11 @@ export function Clause({ text }) {
     </blockquote>
   );
 }
+
+// The smallest type in the system: mono, uppercase, wide-tracked. It appeared as
+// a literal thirty-eight times, in five slightly different trackings that nobody
+// chose on purpose. One token means one decision.
+export const micro = "font-mono text-[0.625rem] uppercase tracking-[0.18em]";
+
+// The same type as a quiet control: grey until you reach for it.
+export const microLink = `${micro} text-ink/50 hover:text-redline`;

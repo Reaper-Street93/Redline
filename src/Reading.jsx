@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { micro } from "./ui.jsx";
 
 // Reading a contract takes the model a while. Rather than a spinner that says
 // nothing, walk through what it is actually doing — the stages are real, the
@@ -37,7 +38,7 @@ export default function Reading({ filename }) {
       </div>
 
       <p className="mt-6 font-serif text-xl">{STAGES[stage]}…</p>
-      <p className="mt-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40">
+      <p className={`mt-2 ${micro} text-ink/40`}>
         {filename}
       </p>
       <p className="mx-auto mt-8 max-w-xs text-xs leading-relaxed text-ink/45">

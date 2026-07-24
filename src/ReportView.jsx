@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Label, Clause } from "./ui.jsx";
+import { Clause, Label, micro } from "./ui.jsx";
 import {
   CONTRACT_TYPE,
   FIT_VERDICT,
@@ -46,14 +46,14 @@ function AskCard({ ask, onCopy }) {
               {String(ask.rank).padStart(2, "0")}
             </span>
             <span
-              className={`border px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] ${
+              className={`border px-1.5 py-0.5 ${micro} ${
                 priorityOf(ask.priority)
               }`}
             >
               {ask.priority}
             </span>
             {muted && (
-              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40">
+              <span className={`${micro} text-ink/40`}>
                 don&apos;t ask
               </span>
             )}
@@ -64,7 +64,7 @@ function AskCard({ ask, onCopy }) {
 
           <button
             onClick={() => setOpen(!open)}
-            className="no-print mt-3 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 underline-offset-4 hover:text-redline hover:underline"
+            className={`no-print mt-3 ${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
           >
             {open ? "hide" : "clause, leverage & wording"}
           </button>
@@ -100,7 +100,7 @@ function AskCard({ ask, onCopy }) {
               <Label>Say it like this</Label>
               <button
                 onClick={() => onCopy(ask.suggested_wording)}
-                className="no-print font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 underline-offset-4 hover:text-redline hover:underline"
+                className={`no-print ${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
               >
                 copy
               </button>
@@ -131,7 +131,7 @@ function TermRow({ term }) {
         </span>
         <span className="text-sm">{term.value}</span>
         <span
-          className={`flex items-center justify-end gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.16em] ${a.tone}`}
+          className={`flex items-center justify-end gap-1.5 ${micro} ${a.tone}`}
         >
           <span className={`h-1.5 w-1.5 ${a.dot}`} />
           {a.label}
@@ -228,7 +228,7 @@ export default function ReportView({ report, onCopyText }) {
           <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
             What to ask for
           </h3>
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45">
+          <span className={`${micro} text-ink/45`}>
             {asks.length} points, ranked
           </span>
         </div>
@@ -284,7 +284,7 @@ export default function ReportView({ report, onCopyText }) {
           <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
             The terms
           </h3>
-          <span className="no-print font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45">
+          <span className={`no-print ${micro} text-ink/45`}>
             tap a row for the clause
           </span>
         </div>
@@ -309,7 +309,7 @@ export default function ReportView({ report, onCopyText }) {
                   <div className="flex items-center gap-2.5">
                     <span className={`h-3 w-0.5 ${s.bar}`} />
                     <span
-                      className={`font-mono text-[0.625rem] uppercase tracking-[0.18em] ${s.tone}`}
+                      className={`${micro} ${s.tone}`}
                     >
                       {s.label}
                     </span>

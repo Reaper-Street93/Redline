@@ -24,6 +24,7 @@ import {
   profileIsUseful,
 } from "./profile.js";
 import { LogoMark, Wordmark } from "./Logo.jsx";
+import { micro, microLink } from "./ui.jsx";
 
 export default function App() {
   const [file, setFile] = useState(null);
@@ -200,13 +201,13 @@ export default function App() {
           <div className="flex items-center gap-5">
             <button
               onClick={() => setHistoryOpen(true)}
-              className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+              className={microLink}
             >
               history{history.length ? ` (${history.length})` : ""}
             </button>
             <button
               onClick={() => setProfileOpen(true)}
-              className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+              className={`flex items-center gap-2 ${micro} text-ink/50 hover:text-redline`}
             >
               <span
                 className={`h-1.5 w-1.5 ${hasProfile ? "bg-good" : "bg-rule"}`}
@@ -214,13 +215,13 @@ export default function App() {
               {hasProfile ? "your profile" : "add your profile"}
             </button>
             {status?.mock && (
-              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-watch">
+              <span className={`${micro} text-watch`}>
                 mock mode
               </span>
             )}
             <button
               onClick={toggleTheme}
-              className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/50 hover:text-redline"
+              className={microLink}
               title="Switch theme"
             >
               {dark ? "light" : "dark"}
@@ -275,7 +276,7 @@ export default function App() {
                 <p className="mt-4 font-serif text-xl">
                   {file ? file.name : "Drop your contract here"}
                 </p>
-                <p className="mt-1.5 font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40">
+                <p className={`mt-1.5 ${micro} text-ink/40`}>
                   {file
                     ? `${formatSize(file.size)} — ready`
                     : "PDF · up to 10 MB · nothing is stored"}
@@ -342,26 +343,26 @@ export default function App() {
             <div className="no-print mx-auto mb-8 flex max-w-3xl items-center justify-between">
               <button
                 onClick={reset}
-                className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+                className={microLink}
               >
                 ← another contract
               </button>
               <div className="flex gap-5">
                 <button
                   onClick={() => setChatOpen(true)}
-                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-redline underline-offset-4 hover:underline"
+                  className={`${micro} text-redline underline-offset-4 hover:underline`}
                 >
                   ask about it
                 </button>
                 <button
                   onClick={() => downloadCsv(report)}
-                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+                  className={microLink}
                 >
                   csv
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+                  className={microLink}
                 >
                   print / pdf
                 </button>
@@ -380,7 +381,7 @@ export default function App() {
           </p>
           <button
             onClick={() => setNotice("open")}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 underline-offset-4 hover:text-redline hover:underline"
+            className={`${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
           >
             what this is · privacy · erase everything
           </button>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { micro } from "./ui.jsx";
 
 // Openers that get someone past the blank-box problem. Deliberately the three
 // things people actually want: a fact, a judgement, and a draft.
@@ -73,7 +74,7 @@ export default function ChatPanel({ report, profile, pdf, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 hover:text-redline"
+            className={`${micro} text-ink/45 hover:text-redline`}
           >
             close
           </button>
@@ -120,7 +121,7 @@ export default function ChatPanel({ report, profile, pdf, onClose }) {
             )}
 
             {thinking && (
-              <p className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-ink/40">
+              <p className={`${micro} text-ink/40`}>
                 reading…
               </p>
             )}
@@ -153,7 +154,7 @@ export default function ChatPanel({ report, profile, pdf, onClose }) {
             <button
               onClick={() => send(draft)}
               disabled={!draft.trim() || thinking}
-              className="border-2 border-ink px-4 py-2 font-mono text-[0.625rem] uppercase tracking-[0.18em] hover:bg-ink hover:text-stock disabled:border-ink/20 disabled:text-ink/20 disabled:hover:bg-transparent disabled:hover:text-ink/20"
+              className={`border-2 border-ink px-4 py-2 ${micro} hover:bg-ink hover:text-stock disabled:border-ink/20 disabled:text-ink/20 disabled:hover:bg-transparent disabled:hover:text-ink/20`}
             >
               ask
             </button>

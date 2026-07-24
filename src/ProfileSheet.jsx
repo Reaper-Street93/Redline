@@ -1,13 +1,12 @@
 import { useRef, useState } from "react";
 import { fileToBase64, checkFile } from "./pdf.js";
 import { EMPTY_PROFILE } from "./profile.js";
+import { Label, micro } from "./ui.jsx";
 
 function Field({ label, hint, children }) {
   return (
     <label className="block">
-      <span className="font-mono text-[0.625rem] uppercase tracking-[0.22em] text-ink/45">
-        {label}
-      </span>
+      <Label className="inline">{label}</Label>
       {hint && <span className="ml-2 text-xs text-ink/35">{hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
@@ -123,7 +122,7 @@ export default function ProfileSheet({ profile, onSave, onClear, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/45 hover:text-redline"
+            className={`${micro} text-ink/45 hover:text-redline`}
           >
             close
           </button>
@@ -241,7 +240,7 @@ export default function ProfileSheet({ profile, onSave, onClear, onClose }) {
         <footer className="sticky bottom-0 mt-auto flex items-center justify-between border-t border-rule bg-stock px-6 py-4">
           <button
             onClick={onClear}
-            className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/40 hover:text-redline"
+            className={`${micro} text-ink/40 hover:text-redline`}
           >
             forget me
           </button>

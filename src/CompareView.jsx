@@ -1,5 +1,5 @@
 import { formatWhen } from "./history.js";
-import { Label } from "./ui.jsx";
+import { Label, microLink } from "./ui.jsx";
 import { assessmentOf, recommendationOf } from "./vocab.js";
 
 // Two numbers, side by side, with the better one in full ink and the other
@@ -66,7 +66,7 @@ function Column({ entry }) {
       </h3>
       <p className="mt-1 text-xs text-ink/50">{doc.employer}</p>
       <p
-        className={`mt-2 font-mono text-[0.625rem] uppercase tracking-[0.16em] ${rec.tone}`}
+        className={`mt-2 ${micro} ${rec.tone}`}
       >
         {rec.label}
       </p>
@@ -100,13 +100,13 @@ export default function CompareView({ pair, onClose }) {
       <div className="no-print mb-8 flex items-center justify-between">
         <button
           onClick={onClose}
-          className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+          className={microLink}
         >
           ← back
         </button>
         <button
           onClick={() => window.print()}
-          className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+          className={microLink}
         >
           print / pdf
         </button>
