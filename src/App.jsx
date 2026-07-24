@@ -3,6 +3,7 @@ import ReportView from "./ReportView.jsx";
 import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
 import { fileToBase64, checkFile } from "./pdf.js";
+import { downloadCsv } from "./csv.js";
 import ProfileSheet from "./ProfileSheet.jsx";
 import HistorySheet from "./HistorySheet.jsx";
 import CompareView from "./CompareView.jsx";
@@ -305,12 +306,20 @@ export default function App() {
               >
                 ← another contract
               </button>
-              <button
-                onClick={() => window.print()}
-                className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
-              >
-                print / pdf
-              </button>
+              <div className="flex gap-5">
+                <button
+                  onClick={() => downloadCsv(report)}
+                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+                >
+                  csv
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-ink/50 hover:text-redline"
+                >
+                  print / pdf
+                </button>
+              </div>
             </div>
             <ReportView report={report} onCopyText={copyText} />
           </>
