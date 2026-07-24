@@ -158,8 +158,10 @@ export default function App() {
     if (comparePair?.some((entry) => entry.id === id)) setComparePair(null);
   }
 
-  // The one button that has to do exactly what it says: profile, history,
-  // consent, theme — all of it, gone.
+  // The one button that has to do exactly what it says. Everything Redline has
+  // ever kept about this person: profile, history, the consent record, the file
+  // they were about to send and the PDF still in memory. The theme survives on
+  // purpose — it is a display preference, not something we learned about them.
   function eraseEverything() {
     clearProfile();
     setProfile(null);
@@ -170,6 +172,10 @@ export default function App() {
     setComparePair(null);
     setCompareBase(null);
     setNotice(null);
+    setChatOpen(false);
+    setFile(null);
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setToast("Everything erased");
     setTimeout(() => setToast(null), 1600);
   }

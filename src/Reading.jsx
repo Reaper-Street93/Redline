@@ -4,6 +4,9 @@ import { micro } from "./ui.jsx";
 // Reading a contract takes the model a while. Rather than a spinner that says
 // nothing, walk through what it is actually doing — the stages are real, the
 // timings are a good-faith guess, and the last one holds until the reply lands.
+// Observed runs land between 23s and 77s depending on free-tier congestion, so
+// the stages are paced to fill most of that rather than finishing in 25s and
+// leaving the reader watching a frozen caption.
 const STAGES = [
   "Opening the document",
   "Reading the clauses",
@@ -19,7 +22,7 @@ export default function Reading({ filename }) {
   useEffect(() => {
     const timer = setInterval(
       () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
-      4200
+      6000
     );
     return () => clearInterval(timer);
   }, []);
@@ -27,11 +30,11 @@ export default function Reading({ filename }) {
   return (
     <section className="mx-auto max-w-md py-20 text-center">
       <div className="mx-auto flex h-16 w-12 flex-col justify-center gap-[5px] border border-rule px-2">
-        {[0, 1, 2, 3, 4].map((i) => (
+        {STAGES.map((_, i) => (
           <span
             key={i}
             className={`h-[2px] transition-colors duration-500 ${
-              i === stage % 5 ? "bg-redline" : "bg-rule"
+              i <= stage ? "bg-redline" : "bg-rule"
             }`}
           />
         ))}
