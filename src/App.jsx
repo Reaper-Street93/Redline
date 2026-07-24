@@ -46,6 +46,10 @@ export default function App() {
   // answered from the document rather than from the report about it.
   const [pdfB64, setPdfB64] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  // Bumped whenever a different report goes on screen. Without it the expanded
+  // terms and asks of the last report stay open on the next one, because React
+  // keeps the state of components it considers the same.
+  const [reportKey, setReportKey] = useState(0);
   // "gate" blocks the first upload until the notice is read; "open" is the
   // same text reopened voluntarily from the footer.
   const [notice, setNotice] = useState(null);
@@ -130,13 +134,18 @@ export default function App() {
       if (!res.ok || !data.report) {
         throw new Error(data.error || "Something went wrong. Try again.");
       }
-      setReport(data.report);
+      showReport(data.report);
       setHistory(addToHistory(data.report, file.name));
     } catch (err) {
       setError(err.message || "Could not reach the server. Try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function showReport(next) {
+    setReport(next);
+    setReportKey((k) => k + 1);
   }
 
   function handleCompareClick(entry) {
@@ -249,7 +258,7 @@ export default function App() {
             onPickFile={handleFile}
             onAnalyse={analyse}
             onOpenProfile={() => setProfileOpen(true)}
-            onShowExample={() => setReport(SAMPLE_REPORT)}
+            onShowExample={() => showReport(SAMPLE_REPORT)}
           />
         )}
 
@@ -283,7 +292,7 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <ReportView report={report} onCopyText={copyText} />
+            <ReportView key={reportKey} report={report} onCopyText={copyText} />
           </>
         )}
       </main>
@@ -332,7 +341,7 @@ export default function App() {
           onOpen={(entry) => {
             setComparePair(null);
             setPdfB64(null);
-            setReport(entry.report);
+            showReport(entry.report);
             setHistoryOpen(false);
           }}
           onCompareClick={handleCompareClick}
