@@ -12,8 +12,6 @@ export function fileToBase64(file) {
   });
 }
 
-// Catch the obvious problems in the browser, so the user hears about them
-// immediately instead of after a round trip.
 // A 37 KB contract reading "0.0 MB" looks broken. Show the unit that fits.
 export function formatSize(bytes) {
   return bytes < 1024 * 1024
@@ -21,6 +19,8 @@ export function formatSize(bytes) {
     : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// Catch the obvious problems in the browser, so the user hears about them
+// immediately instead of after a round trip.
 export function checkFile(file) {
   if (!file) return "Pick a contract first.";
   if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
