@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: redline
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # set manually in the Render dashboard — never committed
