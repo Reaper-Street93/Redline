@@ -21,9 +21,10 @@ await build({
       export { default as ReportView } from "./src/ReportView.jsx";
       export { default as CompareView } from "./src/CompareView.jsx";
       export { default as HistorySheet } from "./src/HistorySheet.jsx";
-      export { default as ContractSheet } from "./src/ContractSheet.jsx";
+      export { default as SourceSheet } from "./src/SourceSheet.jsx";
       export { SAMPLE_REPORT } from "./src/sampleReport.js";
       export { findClauses, SAMPLE_CLAUSES } from "./src/sampleContract.js";
+      export { findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE } from "./src/sampleProfile.js";
     `,
     resolveDir: new URL(".", import.meta.url).pathname,
     loader: "jsx",
@@ -34,8 +35,9 @@ await build({
   logLevel: "error",
 });
 const {
-  UploadScreen, ReportView, CompareView, HistorySheet, ContractSheet,
+  UploadScreen, ReportView, CompareView, HistorySheet, SourceSheet,
   SAMPLE_REPORT, findClauses, SAMPLE_CLAUSES,
+  findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE,
 } = await import(out);
 
 const results = [];
@@ -109,7 +111,7 @@ check("contract: a quote spanning two clauses finds both",
   findClauses(SAMPLE_REPORT.key_terms[1].verbatim).length === 2,
   findClauses(SAMPLE_REPORT.key_terms[1].verbatim).join(", "));
 
-const sheet = renderToStaticMarkup(React.createElement(ContractSheet, { highlight: ["4.1"], onClose(){} }));
+const sheet = renderToStaticMarkup(React.createElement(SourceSheet, { tab: "contract", contractHighlight: ["4.1"], onTab(){}, onClose(){} }));
 check("contract: sheet renders the document", sheet.includes("Contract of Employment") && sheet.includes("£52,000"));
 check("contract: highlighted clause is marked", sheet.includes("border-redline bg-redline"));
 check("contract: says it is fictional", sheet.includes("does not exist"));
@@ -120,6 +122,40 @@ const withSource = renderToStaticMarkup(React.createElement(ReportView, { report
 const withoutSource = renderToStaticMarkup(React.createElement(ReportView, { report: SAMPLE_REPORT, onCopyText(){} }));
 check("report: offers the source link for the example", withSource.includes("see it in the contract"));
 check("report: no source link without a source", !withoutSource.includes("see it in the contract"));
+
+// ── The example candidate must back what the report claims about them ──────
+// Same promise as the contract, applied to the person: the fit section makes
+// claims about six years, Zendesk and a measured result, and every one has to
+// trace to something in the profile.
+const unbackedMatches = SAMPLE_REPORT.fit.matches.filter((m) => findProfileItems(m).length === 0);
+check("candidate: every fit match traces to the profile", !unbackedMatches.length,
+  unbackedMatches[0]?.slice(0, 60) ?? `${SAMPLE_REPORT.fit.matches.length} matches`);
+
+// The two stated gaps must actually be gaps — the profile must NOT contain them.
+const profileText = JSON.stringify(SAMPLE_PROFILE).toLowerCase();
+check("candidate: the billing gap is a real gap", !profileText.includes("billing"));
+check("candidate: the team-lead gap is a real gap", !/\bteam[- ]lead\b(?!.*never)/.test(SAMPLE_PROFILE.current_role.toLowerCase()));
+
+// Leverage that cites the profile must resolve; leverage that rests on general
+// practice must resolve to nothing, because that distinction is the point.
+check("candidate: leverage citing a result finds it",
+  findProfileItems(SAMPLE_REPORT.asks[0].leverage).some((k) => k.startsWith("achievement")));
+check("candidate: leverage citing a must-have finds it",
+  findProfileItems(SAMPLE_REPORT.asks[3].leverage).some((k) => k.startsWith("must")));
+check("candidate: general-practice leverage cites nothing",
+  findProfileItems(SAMPLE_REPORT.asks[1].leverage).length === 0,
+  findProfileItems(SAMPLE_REPORT.asks[1].leverage).join(", "));
+
+const candidate = renderToStaticMarkup(React.createElement(SourceSheet, {
+  tab: "candidate", profileHighlight: ["achievement-0"], onTab(){}, onClose(){},
+}));
+check("candidate: sheet renders the profile", candidate.includes("14h to 3h") && candidate.includes("£58,000"));
+check("candidate: highlighted item is marked", candidate.includes("border-redline bg-redline"));
+check("candidate: says it is fictional and not the user", candidate.includes("not you"));
+
+const withProfile = renderToStaticMarkup(React.createElement(ReportView, { report: SAMPLE_REPORT, onCopyText(){}, onShowProfile(){} }));
+check("report: offers the leverage backing link", withProfile.includes("what backs this up"));
+check("report: no leverage link without a source", !withoutSource.includes("what backs this up"));
 
 // ── CompareView ────────────────────────────────────────────────────────────
 const a = { id: 1, at: new Date().toISOString(), report: SAMPLE_REPORT };

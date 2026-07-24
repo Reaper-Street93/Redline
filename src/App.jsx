@@ -3,8 +3,9 @@ import ReportView from "./ReportView.jsx";
 import UploadScreen from "./UploadScreen.jsx";
 import Reading from "./Reading.jsx";
 import { SAMPLE_REPORT } from "./sampleReport.js";
-import ContractSheet from "./ContractSheet.jsx";
+import SourceSheet from "./SourceSheet.jsx";
 import { findClauses } from "./sampleContract.js";
+import { findProfileItems } from "./sampleProfile.js";
 import { fileToBase64, checkFile } from "./pdf.js";
 import { downloadCsv } from "./csv.js";
 import { redactProfile } from "./redact.js";
@@ -52,11 +53,10 @@ export default function App() {
   // terms and asks of the last report stay open on the next one, because React
   // keeps the state of components it considers the same.
   const [reportKey, setReportKey] = useState(0);
-  // Only the example report has a document you can go and read: a report from
-  // your own upload never can, because the PDF is never kept. `null` means
-  // there is nothing to show; an array of clause numbers opens the contract at
-  // those clauses.
-  const [sourceClauses, setSourceClauses] = useState(null);
+  // Only the example report has documents you can go and read. A report from
+  // your own upload never does: the PDF is never kept, and your profile is
+  // yours. `null` means there is nothing to show.
+  const [source, setSource] = useState(null);
   const [isExample, setIsExample] = useState(false);
   // "gate" blocks the first upload until the notice is read; "open" is the
   // same text reopened voluntarily from the footer.
@@ -155,7 +155,7 @@ export default function App() {
     setReport(next);
     setReportKey((k) => k + 1);
     setIsExample(example);
-    setSourceClauses(null);
+    setSource(null);
   }
 
   function handleCompareClick(entry) {
@@ -192,7 +192,7 @@ export default function App() {
     setNotice(null);
     setChatOpen(false);
     setIsExample(false);
-    setSourceClauses(null);
+    setSource(null);
     setFile(null);
     setError(null);
     setToast("Everything erased");
@@ -201,7 +201,7 @@ export default function App() {
 
   function reset() {
     setIsExample(false);
-    setSourceClauses(null);
+    setSource(null);
     setPdfB64(null);
     setChatOpen(false);
     setComparePair(null);
@@ -288,10 +288,10 @@ export default function App() {
               <div className="flex gap-5">
                 {isExample && (
                   <button
-                    onClick={() => setSourceClauses([])}
+                    onClick={() => setSource({ tab: "contract" })}
                     className={`${micro} text-ink/50 hover:text-redline`}
                   >
-                    the contract
+                    the sources
                   </button>
                 )}
                 <button
@@ -319,7 +319,29 @@ export default function App() {
               report={report}
               onCopyText={copyText}
               onShowSource={
-                isExample ? (quote) => setSourceClauses(findClauses(quote)) : undefined
+                isExample
+                  ? (quote) =>
+                      setSource({ tab: "contract", clauses: findClauses(quote) })
+                  : undefined
+              }
+              onShowProfile={
+                isExample
+                  ? (text) => {
+                      const items = findProfileItems(text);
+                      setSource({
+                        tab: "candidate",
+                        items,
+                        // An ask that cites nothing from your record is worth
+                        // knowing about, not worth hiding. Only say so when a
+                        // specific leverage line was followed — browsing the
+                        // profile from the section heading is not a finding.
+                        emptyNote:
+                          text && !items.length
+                            ? "This one doesn't lean on anything in the candidate's record — it rests on general practice. Worth knowing before you spend goodwill on it."
+                            : undefined,
+                      });
+                    }
+                  : undefined
               }
             />
           </>
@@ -354,10 +376,14 @@ export default function App() {
         />
       )}
 
-      {sourceClauses && (
-        <ContractSheet
-          highlight={sourceClauses}
-          onClose={() => setSourceClauses(null)}
+      {source && (
+        <SourceSheet
+          tab={source.tab}
+          contractHighlight={source.clauses ?? []}
+          profileHighlight={source.items ?? []}
+          emptyNote={source.emptyNote}
+          onTab={(tab) => setSource({ tab })}
+          onClose={() => setSource(null)}
         />
       )}
 

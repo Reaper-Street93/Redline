@@ -31,7 +31,7 @@ function ScoreBar({ label, value, max = 100, tone }) {
 const likelihoodTone = (n) =>
   n >= 60 ? "bg-good" : n >= 35 ? "bg-watch" : "bg-redline";
 
-function AskCard({ ask, onCopy, onShowSource }) {
+function AskCard({ ask, onCopy, onShowSource, onShowProfile }) {
   const [open, setOpen] = useState(ask.rank <= 2);
   const muted = ask.should_ask === false;
 
@@ -94,6 +94,14 @@ function AskCard({ ask, onCopy, onShowSource }) {
           <div>
             <Label className="mb-1.5">Your leverage</Label>
             <p className="text-sm leading-relaxed text-ink/75">{ask.leverage}</p>
+            {onShowProfile && (
+              <button
+                onClick={() => onShowProfile(ask.leverage)}
+                className={`no-print mt-1.5 ${micro} text-ink/40 underline-offset-4 hover:text-redline hover:underline`}
+              >
+                what backs this up →
+              </button>
+            )}
           </div>
           <div className="border border-rule bg-ink/[0.03] p-4 dark:bg-ink/[0.04]">
             <div className="flex items-baseline justify-between gap-3">
@@ -156,7 +164,7 @@ function StatCell({ label, children, sub }) {
   );
 }
 
-export default function ReportView({ report, onCopyText, onShowSource }) {
+export default function ReportView({ report, onCopyText, onShowSource, onShowProfile }) {
   const doc = report.document ?? {};
   // Reports saved before the field was renamed carry `gaps`.
   const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
@@ -238,6 +246,7 @@ export default function ReportView({ report, onCopyText, onShowSource }) {
               ask={ask}
               onCopy={onCopyText}
               onShowSource={onShowSource}
+              onShowProfile={onShowProfile}
             />
           ))}
         </div>
@@ -245,9 +254,19 @@ export default function ReportView({ report, onCopyText, onShowSource }) {
 
       {/* Fit detail */}
       <section className="mt-12">
-        <h3 className="border-b-2 border-ink pb-2 font-mono text-xs uppercase tracking-[0.28em]">
-          You against this role
-        </h3>
+        <div className="flex items-baseline justify-between border-b-2 border-ink pb-2">
+          <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
+            You against this role
+          </h3>
+          {onShowProfile && (
+            <button
+              onClick={() => onShowProfile("")}
+              className={`no-print ${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
+            >
+              read the profile →
+            </button>
+          )}
+        </div>
         <p className="mt-4 text-sm leading-relaxed text-ink/75">
           {report.fit?.rationale}
         </p>

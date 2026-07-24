@@ -15,10 +15,13 @@ hundred of them.
   scans and stamped pages work, not just files with a clean text layer.
 - **Quotes everything** — every term, flag and negotiating point carries the
   clause it came from, word for word, so you can check the machine against
-  the paper in ten seconds. The example report ships with the contract it was
-  read from: click any quote and the document opens at that clause, so the
-  promise can be checked rather than believed. `npm run check` asserts that
-  every quote in the example resolves to a real clause in it.
+  the paper in ten seconds. The example ships with **both documents it was
+  written from** — the contract behind every quote, and the candidate behind
+  every claim about the person. Click a quote and the contract opens at that
+  clause; click "what backs this up" under an ask and the profile opens at the
+  achievement being cited. When an ask cites nothing from your record, it says
+  so, because an ask resting on general practice is one you should know is
+  doing that. `npm run check` asserts both halves stay true.
 - **Weighs it against you** — upload your CV once and it becomes an editable
   profile. Each suggested ask then names the thing in *your* record you can
   point at to win it, instead of generic negotiation advice.
