@@ -42,6 +42,12 @@ export const REPORT_SCHEMA = {
         properties: {
           label: { type: "string", description: "Short, e.g. 'Notice period'." },
           value: { type: "string", description: "The answer in one line, e.g. '3 months either way'." },
+          theme: {
+            type: "string",
+            enum: ["pay", "time", "leaving", "working", "other"],
+            description:
+              "Which part of working life this term belongs to. pay: salary, bonus, pension, sick pay. time: hours, holiday, probation. leaving: notice, termination, restrictive covenants. working: place of work, on-call, IP, confidentiality. other: anything that fits none of these.",
+          },
           verbatim: {
             type: "string",
             description:

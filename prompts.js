@@ -18,6 +18,7 @@ ${profileBlock(profile)}
 
 How to work:
 
+- Tag every term with the part of working life it belongs to (its "theme"), so the report can group them the way a person actually thinks: the money, their time, leaving, the work itself.
 - QUOTE, NEVER INVENT. Every "verbatim" and "clause" field must be lifted word-for-word from the PDF. If a term is not in the document, write exactly "not in the contract" — never reconstruct what you think it probably says.
 - Read the whole document, including schedules, annexes and anything in small print. Onerous terms hide at the back.
 - Assess against ordinary market practice for this kind of role in the stated jurisdiction. If no governing law is stated, assume the UK and say so.

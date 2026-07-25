@@ -15,6 +15,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Base salary",
       value: "£52,000 per year, paid monthly",
+      theme: "pay",
       verbatim:
         "The Employee shall be paid a basic salary of £52,000 per annum, payable monthly in arrears on the last working day of each month.",
       assessment: "watch",
@@ -23,6 +24,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Notice period",
       value: "3 months from you, 1 month from them",
+      theme: "leaving",
       verbatim:
         "The Employee shall give not less than three (3) months' written notice. The Company shall give not less than one (1) month's written notice.",
       assessment: "red_flag",
@@ -31,6 +33,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Restrictive covenants",
       value: "12-month non-compete, United Kingdom",
+      theme: "leaving",
       verbatim:
         "For a period of twelve (12) months following termination the Employee shall not be engaged in any business competing with the Company within the United Kingdom.",
       assessment: "red_flag",
@@ -39,6 +42,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Holiday",
       value: "25 days plus bank holidays",
+      theme: "time",
       verbatim:
         "The Employee is entitled to 25 days' paid holiday per holiday year in addition to the usual public holidays in England and Wales.",
       assessment: "standard",
@@ -47,6 +51,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Probation",
       value: "6 months, 1 week's notice during",
+      theme: "time",
       verbatim:
         "The first six (6) months of employment shall be a probationary period during which either party may terminate on one week's notice.",
       assessment: "watch",
@@ -55,6 +60,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Place of work",
       value: "Manchester office, hybrid not specified",
+      theme: "working",
       verbatim:
         "The Employee's normal place of work shall be the Company's offices at 14 Wharf Street, Manchester.",
       assessment: "watch",
@@ -63,6 +69,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Working hours",
       value: "37.5 hours, plus reasonable additional hours",
+      theme: "time",
       verbatim:
         "Normal working hours are 9:00am to 5:30pm Monday to Friday, together with such additional hours as may be reasonably necessary.",
       assessment: "standard",
@@ -71,6 +78,7 @@ export const SAMPLE_REPORT = {
     {
       label: "On-call",
       value: "Not mentioned",
+      theme: "working",
       verbatim: "not in the contract",
       assessment: "watch",
       note: "The job advert mentioned a weekend rota; the contract is silent, which cuts both ways.",
@@ -78,6 +86,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Intellectual property",
       value: "All work product assigned to the employer",
+      theme: "working",
       verbatim:
         "All intellectual property created by the Employee in the course of employment shall vest absolutely in the Company.",
       assessment: "standard",
@@ -86,6 +95,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Bonus",
       value: "Discretionary, up to 10%",
+      theme: "pay",
       verbatim:
         "The Employee may be eligible for a discretionary annual bonus of up to 10% of basic salary.",
       assessment: "watch",
@@ -94,6 +104,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Sick pay",
       value: "Statutory only after probation",
+      theme: "pay",
       verbatim:
         "Save for statutory sick pay, the Company operates no contractual sick pay scheme.",
       assessment: "watch",
@@ -102,6 +113,7 @@ export const SAMPLE_REPORT = {
     {
       label: "Pension",
       value: "Auto-enrolment, 3% employer",
+      theme: "pay",
       verbatim:
         "The Company will comply with its auto-enrolment obligations and contribute 3% of qualifying earnings.",
       assessment: "standard",

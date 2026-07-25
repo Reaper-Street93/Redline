@@ -25,6 +25,7 @@ await build({
       export { SAMPLE_REPORT } from "./src/sampleReport.js";
       export { findClauses, SAMPLE_CLAUSES } from "./src/sampleContract.js";
       export { findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE } from "./src/sampleProfile.js";
+      export { groupByTheme, isImprovable, themeOf } from "./src/themes.js";
     `,
     resolveDir: new URL(".", import.meta.url).pathname,
     loader: "jsx",
@@ -38,6 +39,7 @@ const {
   UploadScreen, ReportView, CompareView, HistorySheet, SourceSheet,
   SAMPLE_REPORT, findClauses, SAMPLE_CLAUSES,
   findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE,
+  groupByTheme, isImprovable, themeOf,
 } = await import(out);
 
 const results = [];
@@ -94,6 +96,23 @@ weird.asks[0].priority = "urgent";
 const weirdHtml = renderToStaticMarkup(React.createElement(ReportView, { report: weird, onCopyText: () => {} }));
 const leaks = weirdHtml.match(/(?:class="[^"]*undefined|>\s*undefined\s*<)/g);
 check("report: survives unknown enums", !leaks, leaks ? leaks.join(" ") : "");
+
+// ── Two-page report ────────────────────────────────────────────────────────
+const summaryOnly = renderToStaticMarkup(React.createElement(ReportView, { report: SAMPLE_REPORT, onCopyText(){} }));
+check("report: summary page groups terms by theme", summaryOnly.includes("The money") && summaryOnly.includes("Leaving, and afterwards"));
+check("report: summary marks what can be improved", summaryOnly.includes("to improve"));
+check("report: bridges to the asks page", summaryOnly.includes("What to ask for"));
+// both pages are in the DOM (print gets the whole thing) even though one is hidden on screen
+check("report: asks page present for print", summaryOnly.includes("Say it like this") || summaryOnly.includes("points, ranked"));
+check("report: full terms table on the evidence page", summaryOnly.includes("The terms, in full"));
+
+// grouping: every themed term lands in a real group, order follows THEMES
+const grouped = groupByTheme(SAMPLE_REPORT.key_terms);
+const regrouped = grouped.reduce((n, g) => n + g.terms.length, 0);
+check("themes: every term is grouped exactly once", regrouped === SAMPLE_REPORT.key_terms.length, `${regrouped} of ${SAMPLE_REPORT.key_terms.length}`);
+check("themes: no empty groups rendered", grouped.every((g) => g.terms.length > 0));
+// the fallback classifier must still place an un-themed term
+check("themes: fallback places an un-themed term", themeOf({ label: "Notice period" }) === "leaving", themeOf({ label: "Notice period" }));
 
 // ── The example contract must actually back the example report ─────────────
 // This is the app's central promise made checkable, so it is worth asserting:

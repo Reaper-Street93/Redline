@@ -41,6 +41,17 @@ hundred of them.
   and chatting, a global daily budget, and size and page caps keep the
   free-tier key safe on a public URL.
 
+## Two pages, one report
+
+The report opens on a **Summary**: the whole contract in plain English, grouped
+the way a person actually thinks about an offer — the money, your time, leaving,
+the work itself — with the terms worth improving marked and a running count per
+group. One click through to **What to ask for**: the ranked asks with leverage
+and ready-to-send wording, the fit detail, the full terms table with the clause
+behind each, the flags, and what the contract leaves out. Same report, read in
+two passes — "what is this?" then "what do I do about it?". A print or PDF
+export carries both.
+
 ## Where the legal line sits
 
 This was designed in before any code was written, because it's the part that

@@ -67,6 +67,7 @@ One report, as JSON in this exact shape:
     {
       "label": "Base salary",
       "value": "£52,000 per year",
+      "theme": "pay",
       "verbatim": "The Employee shall receive a salary of £52,000 per annum...",
       "assessment": "watch",
       "note": "Six thousand under your target, and no review date is named."
@@ -125,6 +126,7 @@ One report, as JSON in this exact shape:
 | `summary` | string | 2–4 sentences, plain English, no legalese |
 | `key_terms` | array | 6–12 terms: pay, hours, holiday, notice, probation, place of work, IP, restrictive covenants, termination, benefits, bonus, expenses |
 | `key_terms[].label` | string | Short, e.g. `"Notice period"` |
+| `key_terms[].theme` | string | One of `pay`, `time`, `leaving`, `working`, `other` — which part of working life the term belongs to, so the summary can group terms the way a person thinks |
 | `key_terms[].value` | string | The answer in one line, e.g. `"3 months either way"` |
 | `key_terms[].verbatim` | string | Quoted from the contract, never paraphrased or invented |
 | `key_terms[].assessment` | string | One of `favourable`, `standard`, `watch`, `red_flag` |
@@ -167,6 +169,21 @@ One report, as JSON in this exact shape:
 - **`missing` as a first-class field** — what a contract *doesn't* say is
   routinely worse than what it does. A model that only summarises what's on
   the page misses the most valuable half.
+
+## Two views of one report
+
+The report is read in two passes, because "what is this?" and "what do I do
+about it?" are different questions asked at different moments:
+
+- **Summary** — the whole contract in plain English, grouped by `theme` the way
+  a person actually thinks about an offer (the money, their time, leaving, the
+  work itself), with the terms worth improving marked. No legalese, no clauses.
+- **What to ask for** — the ranked asks with leverage and wording, the fit
+  detail, the full terms table with the verbatim clause behind each, the flags
+  and what's missing. This is the evidence and the negotiation.
+
+Both are the same underlying report; the split is presentational. A print or
+PDF export contains both.
 
 ## Where the legal line sits
 

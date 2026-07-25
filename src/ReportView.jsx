@@ -8,6 +8,17 @@ import {
   recommendationOf,
   severityOf,
 } from "./vocab.js";
+import { groupByTheme, isImprovable } from "./themes.js";
+
+// The heavy ruled heading that opens each block of the report.
+function SectionHeading({ children, aside }) {
+  return (
+    <div className="flex items-baseline justify-between border-b-2 border-ink pb-2">
+      <h3 className="font-mono text-xs uppercase tracking-[0.28em]">{children}</h3>
+      {aside}
+    </div>
+  );
+}
 
 // Likelihood is a percentage; impact is 1-5. Both render as the same thin
 // bar so the eye can compare them down a column of asks.
@@ -164,81 +175,115 @@ function StatCell({ label, children, sub }) {
   );
 }
 
-export default function ReportView({ report, onCopyText, onShowSource, onShowProfile }) {
-  const doc = report.document ?? {};
-  // Reports saved before the field was renamed carry `gaps`.
-  const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
-  const rec = recommendationOf(report.overall?.recommendation);
-  const asks = report.asks ?? [];
-  const flags = report.flags ?? [];
-  const hasHighFlag = flags.some((f) => f.severity === "high");
+// ── The summary page: the contract in plain English ────────────────────────
+
+// A single term as the summary shows it — no verbatim clause, just what it says
+// and why it earned its mark. The ones worth acting on carry the red rule, so a
+// reader skimming can see where the room to improve is without reading a word.
+function SummaryTerm({ term }) {
+  const improvable = isImprovable(term.assessment);
+  const a = assessmentOf(term.assessment);
+  return (
+    <div
+      className={`py-2.5 ${
+        improvable ? "border-l-2 border-redline pl-3" : "border-l-2 border-transparent pl-3"
+      }`}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-serif text-[0.95rem]">{term.label}</span>
+        <span className={`shrink-0 text-right text-sm ${improvable ? "text-ink" : "text-ink/70"}`}>
+          {term.value}
+        </span>
+      </div>
+      <p className="mt-1 flex items-start gap-2 text-sm leading-relaxed text-ink/65">
+        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 ${a.dot}`} />
+        {term.note}
+      </p>
+    </div>
+  );
+}
+
+function SummaryPage({ report, onGoToAsks }) {
+  const groups = groupByTheme(report.key_terms);
+  const askable = (report.asks ?? []).filter((a) => a.should_ask !== false).length;
+  const improvable = (report.key_terms ?? []).filter((t) => isImprovable(t.assessment)).length;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      {/* Masthead */}
-      <header className="border-b-2 border-ink pb-4">
-        <Label>{CONTRACT_TYPE[doc.contract_type] ?? "Contract"}</Label>
-        <h2 className="mt-2 font-serif text-3xl leading-tight sm:text-4xl">
-          {doc.title}
-        </h2>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink/50">
-          <span>{doc.employer}</span>
-          <span>{doc.role}</span>
-          <span>{doc.jurisdiction}</span>
-        </div>
-      </header>
-
-      {doc.read_confidence === "low" && (
-        <p className="mt-4 border-l-2 border-watch bg-watch/[0.07] px-4 py-3 text-sm leading-relaxed text-ink/80">
-          <strong className="font-semibold">This PDF was hard to read.</strong>{" "}
-          It may be a low-quality scan or a photograph. Check every quoted
-          clause against the document itself before you rely on anything here.
-        </p>
-      )}
-
-      {/* Verdict strip */}
-      <section className="mt-6 grid border border-rule sm:grid-cols-3">
-        <StatCell label="Verdict">
-          <span className={rec.tone}>{rec.label}</span>
-        </StatCell>
-        <StatCell
-          label="Terms fairness"
-          sub="How these terms sit against ordinary practice."
-        >
-          {report.overall?.fairness_score}
-          <span className="text-base text-ink/40">/100</span>
-        </StatCell>
-        <StatCell
-          label="Your fit"
-          sub={`${report.fit?.verdict ?? ""} match for this role`}
-        >
-          <span className={FIT_VERDICT[report.fit?.verdict] ?? ""}>
-            {report.fit?.score}
-          </span>
-          <span className="text-base text-ink/40">/100</span>
-        </StatCell>
-      </section>
-
-      <p className="mt-6 font-serif text-lg leading-relaxed sm:text-xl">
-        {report.summary}
-      </p>
-
+    <div>
+      <p className="font-serif text-lg leading-relaxed sm:text-xl">{report.summary}</p>
       {report.overall?.recommendation_reason && (
         <p className="mt-4 text-sm leading-relaxed text-ink/70">
           {report.overall.recommendation_reason}
         </p>
       )}
 
+      <p className="mt-6 text-sm leading-relaxed text-ink/60">
+        Here is the whole contract in plain English, grouped the way you would
+        actually think about it. The terms with a red edge are the ones worth a
+        second look — {improvable} of them.
+      </p>
+
+      {groups.map((group) => {
+        const count = group.terms.filter((t) => isImprovable(t.assessment)).length;
+        return (
+          <section key={group.key} className="mt-10">
+            <SectionHeading
+              aside={
+                count > 0 && (
+                  <span className={`${micro} text-redline`}>
+                    {count} to improve
+                  </span>
+                )
+              }
+            >
+              {group.heading}
+            </SectionHeading>
+            <p className="mt-2 text-xs leading-relaxed text-ink/45">{group.blurb}</p>
+            <div className="mt-2">
+              {group.terms.map((term) => (
+                <SummaryTerm key={term.index} term={term} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      {/* The bridge to the second page — the point of the whole thing. */}
+      <div className="no-print mt-12 border-2 border-ink p-6 text-center">
+        <p className="font-serif text-xl">
+          {askable} {askable === 1 ? "thing is" : "things are"} worth going back
+          and asking for.
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink/65">
+          Ranked by what is worth spending your goodwill on, each with the odds,
+          the leverage from your own record, and wording you can send today.
+        </p>
+        <button
+          onClick={onGoToAsks}
+          className="mt-5 border-2 border-ink px-6 py-2.5 font-mono text-xs uppercase tracking-[0.2em] hover:bg-ink hover:text-stock"
+        >
+          What to ask for →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── The evidence page: what to ask for, and the receipts ───────────────────
+
+function AsksPage({ report, onCopyText, onShowSource, onShowProfile }) {
+  const gaps = report.fit?.experience_gaps ?? report.fit?.gaps ?? [];
+  const asks = report.asks ?? [];
+  const flags = report.flags ?? [];
+  const hasHighFlag = flags.some((f) => f.severity === "high");
+
+  return (
+    <div>
       {/* The asks */}
-      <section className="mt-12">
-        <div className="flex items-baseline justify-between border-b-2 border-ink pb-2">
-          <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
-            What to ask for
-          </h3>
-          <span className={`${micro} text-ink/45`}>
-            {asks.length} points, ranked
-          </span>
-        </div>
+      <section>
+        <SectionHeading aside={<span className={`${micro} text-ink/45`}>{asks.length} points, ranked</span>}>
+          What to ask for
+        </SectionHeading>
         <div className="mt-2">
           {asks.map((ask) => (
             <AskCard
@@ -254,22 +299,21 @@ export default function ReportView({ report, onCopyText, onShowSource, onShowPro
 
       {/* Fit detail */}
       <section className="mt-12">
-        <div className="flex items-baseline justify-between border-b-2 border-ink pb-2">
-          <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
-            You against this role
-          </h3>
-          {onShowProfile && (
-            <button
-              onClick={() => onShowProfile("")}
-              className={`no-print ${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
-            >
-              read the profile →
-            </button>
-          )}
-        </div>
-        <p className="mt-4 text-sm leading-relaxed text-ink/75">
-          {report.fit?.rationale}
-        </p>
+        <SectionHeading
+          aside={
+            onShowProfile && (
+              <button
+                onClick={() => onShowProfile("")}
+                className={`no-print ${micro} text-ink/45 underline-offset-4 hover:text-redline hover:underline`}
+              >
+                read the profile →
+              </button>
+            )
+          }
+        >
+          You against this role
+        </SectionHeading>
+        <p className="mt-4 text-sm leading-relaxed text-ink/75">{report.fit?.rationale}</p>
         <div className="mt-5 grid gap-6 sm:grid-cols-2">
           <div>
             <Label className="mb-2">Where you&apos;re strong</Label>
@@ -301,16 +345,11 @@ export default function ReportView({ report, onCopyText, onShowSource, onShowPro
         </div>
       </section>
 
-      {/* Key terms */}
+      {/* Key terms — the full evidence, with the clause behind each */}
       <section className="mt-12">
-        <div className="flex items-baseline justify-between border-b-2 border-ink pb-2">
-          <h3 className="font-mono text-xs uppercase tracking-[0.28em]">
-            The terms
-          </h3>
-          <span className={`no-print ${micro} text-ink/45`}>
-            tap a row for the clause
-          </span>
-        </div>
+        <SectionHeading aside={<span className={`no-print ${micro} text-ink/45`}>tap a row for the clause</span>}>
+          The terms, in full
+        </SectionHeading>
         <div className="mt-1">
           {(report.key_terms ?? []).map((term, i) => (
             <TermRow key={i} term={term} onShowSource={onShowSource} />
@@ -326,23 +365,15 @@ export default function ReportView({ report, onCopyText, onShowSource, onShowPro
           </h3>
           <div className="mt-2">
             {flags.map((flag, i) => {
-              const s = severityOf(flag.severity);
+              const sev = severityOf(flag.severity);
               return (
                 <article key={i} className="border-t border-rule py-4">
                   <div className="flex items-center gap-2.5">
-                    <span className={`h-3 w-0.5 ${s.bar}`} />
-                    <span
-                      className={`${micro} ${s.tone}`}
-                    >
-                      {s.label}
-                    </span>
+                    <span className={`h-3 w-0.5 ${sev.bar}`} />
+                    <span className={`${micro} ${sev.tone}`}>{sev.label}</span>
                   </div>
-                  <h4 className="mt-1.5 font-serif text-lg leading-snug">
-                    {flag.title}
-                  </h4>
-                  <p className="mt-2 text-sm leading-relaxed text-ink/75">
-                    {flag.why}
-                  </p>
+                  <h4 className="mt-1.5 font-serif text-lg leading-snug">{flag.title}</h4>
+                  <p className="mt-2 text-sm leading-relaxed text-ink/75">{flag.why}</p>
                   <div className="mt-3">
                     <Clause text={flag.clause} onFind={onShowSource} />
                   </div>
@@ -399,11 +430,93 @@ export default function ReportView({ report, onCopyText, onShowSource, onShowPro
           </ul>
         </section>
       )}
+    </div>
+  );
+}
+
+// ── The report: two pages over one shared masthead ─────────────────────────
+
+export default function ReportView({ report, onCopyText, onShowSource, onShowProfile }) {
+  const doc = report.document ?? {};
+  const rec = recommendationOf(report.overall?.recommendation);
+  const [page, setPage] = useState("summary");
+
+  const TABS = [
+    ["summary", "Summary"],
+    ["asks", "What to ask for"],
+  ];
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      {/* Masthead */}
+      <header className="border-b-2 border-ink pb-4">
+        <Label>{CONTRACT_TYPE[doc.contract_type] ?? "Contract"}</Label>
+        <h2 className="mt-2 font-serif text-3xl leading-tight sm:text-4xl">{doc.title}</h2>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink/50">
+          <span>{doc.employer}</span>
+          <span>{doc.role}</span>
+          <span>{doc.jurisdiction}</span>
+        </div>
+      </header>
+
+      {doc.read_confidence === "low" && (
+        <p className="mt-4 border-l-2 border-watch bg-watch/[0.07] px-4 py-3 text-sm leading-relaxed text-ink/80">
+          <strong className="font-semibold">This PDF was hard to read.</strong>{" "}
+          It may be a low-quality scan or a photograph. Check every quoted clause
+          against the document itself before you rely on anything here.
+        </p>
+      )}
+
+      {/* Verdict strip — the at-a-glance, on both pages */}
+      <section className="mt-6 grid border border-rule sm:grid-cols-3">
+        <StatCell label="Verdict">
+          <span className={rec.tone}>{rec.label}</span>
+        </StatCell>
+        <StatCell label="Terms fairness" sub="How these terms sit against ordinary practice.">
+          {report.overall?.fairness_score}
+          <span className="text-base text-ink/40">/100</span>
+        </StatCell>
+        <StatCell label="Your fit" sub={`${report.fit?.verdict ?? ""} match for this role`}>
+          <span className={FIT_VERDICT[report.fit?.verdict] ?? ""}>{report.fit?.score}</span>
+          <span className="text-base text-ink/40">/100</span>
+        </StatCell>
+      </section>
+
+      {/* Page switcher */}
+      <nav className="no-print mt-8 flex gap-6 border-b border-rule">
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setPage(key)}
+            className={`-mb-px border-b-2 pb-2 ${micro} ${
+              page === key
+                ? "border-redline text-redline"
+                : "border-transparent text-ink/45 hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Both pages stay mounted so print gets the whole report; the screen
+          shows one at a time, print shows both under their own headings. */}
+      <div className={`mt-8 ${page === "summary" ? "" : "hidden"} print:block`}>
+        <SummaryPage report={report} onGoToAsks={() => setPage("asks")} />
+      </div>
+      <div className={`mt-8 ${page === "asks" ? "" : "hidden"} print:mt-12 print:block`}>
+        <AsksPage
+          report={report}
+          onCopyText={onCopyText}
+          onShowSource={onShowSource}
+          onShowProfile={onShowProfile}
+        />
+      </div>
 
       <footer className="mt-12 border-t border-rule pt-4">
         <p className="font-mono text-[0.625rem] leading-relaxed tracking-[0.08em] text-ink/40">
-          Redline is an information tool, not a solicitor, and this report is
-          not legal advice. Every quoted clause should be checked against the
+          Redline is an information tool, not a solicitor, and this report is not
+          legal advice. Every quoted clause should be checked against the
           document itself before you act on it.
         </p>
       </footer>
