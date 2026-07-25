@@ -9,7 +9,7 @@ const POINTS = [
   },
   {
     title: "Your contract is sent to Google to be read",
-    body: "The PDF goes to Google's Gemini API, which is what does the reading. That is a third party processing a document about you and your employer. Nothing about the file is stored by Redline — it is held in memory for one request and never written to disk or logged — but it does leave this site, and you should know that before you upload rather than after. Your profile has its email addresses, phone numbers, postcodes and reference numbers stripped out before it is sent; the contract itself has to go as it is, because that is the thing being read.",
+    body: "The PDF goes to Google's Gemini API, which is what does the reading. That is a third party processing a document about you and your employer, and Google may process it on servers outside the UK and EEA. Nothing about the file is stored by Redline — it is held in memory for one request and never written to disk or logged — but it does leave this site, and you should know that before you upload rather than after. Your profile has its email addresses, phone numbers, postcodes and reference numbers stripped out before it is sent; the contract itself has to go as it is, because that is the thing being read.",
   },
   {
     title: "Everything else stays in your browser",

@@ -14,10 +14,19 @@ const COLUMNS = [
   "quoted_from_contract",
 ];
 
+// A cell beginning =, +, -, @ or a control character is a formula to Excel and
+// Google Sheets, not text. Since every value here can carry words the model
+// lifted verbatim from an untrusted PDF, a clause reading "=HYPERLINK(...)" or
+// worse would execute the moment the export was opened. Prefixing a single
+// quote defuses it — the spreadsheet shows the literal text and runs nothing.
+// (CSV / formula injection, OWASP.)
+const neutralise = (text) =>
+  /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+
 // Anything containing a comma, quote or newline gets quoted; internal quotes
 // double up. That's the whole of RFC 4180 that matters here.
 function cell(value) {
-  const text = value === undefined || value === null ? "" : String(value);
+  const text = neutralise(value === undefined || value === null ? "" : String(value));
   return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 

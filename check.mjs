@@ -26,6 +26,7 @@ await build({
       export { findClauses, SAMPLE_CLAUSES } from "./src/sampleContract.js";
       export { findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE } from "./src/sampleProfile.js";
       export { groupByTheme, isImprovable, themeOf } from "./src/themes.js";
+      export { reportToCsv } from "./src/csv.js";
     `,
     resolveDir: new URL(".", import.meta.url).pathname,
     loader: "jsx",
@@ -40,6 +41,7 @@ const {
   SAMPLE_REPORT, findClauses, SAMPLE_CLAUSES,
   findProfileItems, PROFILE_ITEMS, SAMPLE_PROFILE,
   groupByTheme, isImprovable, themeOf,
+  reportToCsv,
 } = await import(out);
 
 const results = [];
@@ -113,6 +115,19 @@ check("themes: every term is grouped exactly once", regrouped === SAMPLE_REPORT.
 check("themes: no empty groups rendered", grouped.every((g) => g.terms.length > 0));
 // the fallback classifier must still place an un-themed term
 check("themes: fallback places an un-themed term", themeOf({ label: "Notice period" }) === "leaving", themeOf({ label: "Notice period" }));
+
+// ── CSV export is safe against formula injection ────────────────────────────
+// A contract could get the model to quote "=cmd|..." verbatim; the export must
+// never hand a live formula to a spreadsheet.
+const evilReport = structuredClone(SAMPLE_REPORT);
+evilReport.missing = ["=HYPERLINK(\"http://evil\")", "@SUM(1+1)", "-2+3", "+cmd"];
+evilReport.key_terms[0].value = "=1+1";
+const csvOut = reportToCsv(evilReport);
+const liveFormula = csvOut
+  .split("\r\n")
+  .some((line) => /(^|,)"?[=+@]|(^|,)"?-[A-Za-z(]/.test(line));
+check("csv: no cell is left as a live formula", !liveFormula);
+check("csv: neutralised values keep a leading quote", csvOut.includes("'=HYPERLINK") && csvOut.includes("'@SUM"));
 
 // ── The example contract must actually back the example report ─────────────
 // This is the app's central promise made checkable, so it is worth asserting:

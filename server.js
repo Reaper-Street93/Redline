@@ -1,4 +1,6 @@
 import zlib from "node:zlib";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import {
@@ -13,9 +15,62 @@ import { analysePrompt, cvPrompt, chatPrompt } from "./prompts.js";
 import { SAMPLE_REPORT } from "./src/sampleReport.js";
 
 const app = express();
+// Don't advertise the stack — one less thing for a scanner to fingerprint.
+app.disable("x-powered-by");
 // Render sits behind a proxy — without this, every request shares one IP
 // and the rate limiter would punish everyone for one heavy user.
 app.set("trust proxy", 1);
+
+// ── Security headers ─────────────────────────────────────────────────────────
+// Set on every response, before anything else runs. The Content-Security-Policy
+// is the important one: it says scripts may only come from this origin (plus the
+// one inline theme snippet in index.html, allowed by its exact hash), styles
+// from here or Google Fonts, connections only to here. Even if a rendered value
+// somehow carried markup, the browser would refuse to run it.
+//
+// The inline-script hash is read from the built index.html at startup rather
+// than hard-coded, so it can never drift out of sync with what ships.
+function inlineScriptHashes() {
+  try {
+    const html = readFileSync(`${import.meta.dirname}/dist/index.html`, "utf8");
+    return [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+      .map((m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`)
+      .join(" ");
+  } catch {
+    // No build yet (e.g. `npm start` before `npm run build`) — the CSP still
+    // stands, it just won't allow the theme snippet until dist exists.
+    return "";
+  }
+}
+
+const CSP = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "img-src 'self' data:",
+  "font-src 'self' https://fonts.gstatic.com",
+  // 'unsafe-inline' here covers React's style="" attributes (the score bars),
+  // not scripts — script injection stays blocked by script-src below.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  `script-src 'self' ${inlineScriptHashes()}`.trim(),
+  "connect-src 'self'",
+].join("; ");
+
+app.use((_req, res, next) => {
+  res.setHeader("Content-Security-Policy", CSP);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  // Only meaningful once served over HTTPS (Render terminates TLS); browsers
+  // ignore it over plain http, so it's safe to send locally too.
+  res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  next();
+});
+
 app.use(express.json({ limit: MAX_BODY }));
 
 // In production the same server hosts the built React app from dist/
@@ -32,6 +87,12 @@ const MOCK_AI = process.env.MOCK_AI === "1";
 
 // Overloaded or rate-limited — the two upstream states worth retrying elsewhere.
 const isBusy = (err) => err?.status === 503 || err?.status === 429;
+
+// Log a fixed shape — status and a trimmed message — never the whole error
+// object. An upstream error can carry echoes of the request it failed on, and
+// document contents must never reach a log. Personal data stays out of stdout.
+const logUpstream = (where, err) =>
+  console.error(`${where} failed:`, err?.status ?? "?", (err?.message ?? "").slice(0, 300));
 
 // Free-tier capacity comes and goes per model — walk down this list until one
 // answers. Best model first. All of these can read a PDF directly.
@@ -273,7 +334,7 @@ app.post("/api/analyze", async (req, res) => {
     });
     res.json({ report: finishReport(report) });
   } catch (err) {
-    console.error(err);
+    logUpstream("analyze", err);
     if (isBusy(err)) {
       return res.status(503).json({
         error: "Every free-tier model is busy or rate-limited right now — wait a minute and try again.",
@@ -337,7 +398,7 @@ app.post("/api/profile", async (req, res) => {
     profile.years_experience = clamp(profile.years_experience, 0, 60);
     res.json({ profile });
   } catch (err) {
-    console.error(err);
+    logUpstream("profile", err);
     const detail = (err?.message ?? "").slice(0, 200);
     res.status(isBusy(err) ? 503 : 502).json({
       error: `Reading the CV failed${detail ? `: ${detail}` : ""}. You can fill the profile in by hand.`,
@@ -423,7 +484,7 @@ app.post("/api/chat", async (req, res) => {
     }
     throw lastErr;
   } catch (err) {
-    console.error(err);
+    logUpstream("chat", err);
     const detail = (err?.message ?? "").slice(0, 200);
     res.status(isBusy(err) ? 503 : 502).json({
       error: `Couldn't answer that${detail ? `: ${detail}` : ". Try again."}`,

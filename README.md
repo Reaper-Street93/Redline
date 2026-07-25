@@ -121,6 +121,21 @@ happened:
     that had drifted on what a verdict is called, a design token written out
     thirty-eight times, and a comparison view that would have crashed on open.
 
+## Security & privacy
+
+No login, because none is needed — but the app takes untrusted PDFs and uses a
+third-party AI processor, so the security work is aimed there: a strict
+Content-Security-Policy and a full set of security headers, formula-injection-safe
+CSV export, magic-byte and page-count validation (that sees inside compressed
+page trees), per-IP rate limiting, and logs that never carry document contents.
+The API key stays server-side and is git-ignored. See [SECURITY.md](SECURITY.md).
+
+On privacy: the contract is sent to Google to be read and never stored; your
+profile and history live only in your browser; contact details are stripped
+from the profile before it's sent; and "erase everything" genuinely clears the
+lot. Written up against UK/EU GDPR expectations in [PRIVACY.md](PRIVACY.md), and
+disclosed in-app before the first upload.
+
 ## Run it locally
 
 Requires Node 22+.
