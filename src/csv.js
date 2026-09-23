@@ -113,5 +113,8 @@ export function downloadCsv(report) {
     new Date().toISOString().split("T")[0]
   }.csv`;
   link.click();
-  URL.revokeObjectURL(url);
+  // Firefox and Safari can still be reading the blob when click() returns, so
+  // revoking on the same tick occasionally drops the download on the floor.
+  // Letting the event loop turn first costs nothing and removes the race.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
