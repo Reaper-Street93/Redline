@@ -9,6 +9,10 @@ Most people read an employment contract once, at the worst possible moment,
 with no idea which parts are normal. Redline is the friend who has read four
 hundred of them.
 
+**Live: [redline-contracts.vercel.app](https://redline-contracts.vercel.app)** —
+*See an example report* opens a finished one instantly, or drop in a contract
+PDF (up to 3 MB) and a real report comes back in about a minute.
+
 ## What it does
 
 - **Reads the PDF itself** — the document goes to the model as a PDF, so
