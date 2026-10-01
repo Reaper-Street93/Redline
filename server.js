@@ -465,5 +465,11 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`API listening on ${PORT}`));
+// `npm start` runs this file directly and needs a port. On Vercel, api/index.js
+// imports the app instead and the platform does the listening.
+if (process.argv[1] === import.meta.filename) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`API listening on ${PORT}`));
+}
+
+export default app;
