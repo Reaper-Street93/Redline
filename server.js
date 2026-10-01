@@ -17,7 +17,7 @@ import { securityHeaders, inlineScriptHashes } from "./headers.js";
 const app = express();
 // Don't advertise the stack — one less thing for a scanner to fingerprint.
 app.disable("x-powered-by");
-// Render sits behind a proxy — without this, every request shares one IP
+// Vercel sits in front as a proxy — without this, every request shares one IP
 // and the rate limiter would punish everyone for one heavy user.
 app.set("trust proxy", 1);
 
@@ -295,7 +295,7 @@ app.post("/api/analyze", async (req, res) => {
   if (!HAS_KEY) {
     return res.status(503).json({
       error:
-        "GEMINI_API_KEY is missing or still the placeholder. Grab a free one at aistudio.google.com/apikey and paste the full key into .env (local) or the Render dashboard (production).",
+        "GEMINI_API_KEY is missing or still the placeholder. Grab a free one at aistudio.google.com/apikey and paste the full key into .env (local) or the Vercel project's environment variables (production).",
     });
   }
 

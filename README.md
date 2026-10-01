@@ -172,9 +172,14 @@ dependencies, about a second to run.
 npm run build && npm start
 ```
 
-One process serves both the built frontend and the API. `render.yaml` is a
-ready-made [Render](https://render.com) blueprint — connect the repo, set
-`GEMINI_API_KEY` in the dashboard, done.
+Locally, one process serves both the built frontend and the API.
+
+The live site runs on [Vercel](https://vercel.com): the built frontend is
+served from its CDN with the same security headers the server sends (kept in
+step by `npm run check`), and `api/index.js` hands every `/api` request to
+the same Express app as a function in the London region. Every push to
+`main` redeploys. To run your own copy, import the repo into Vercel and set
+`GEMINI_API_KEY` in the project's environment variables.
 
 ## Design
 
@@ -189,4 +194,4 @@ header toggle overrides it, and printing always comes out on light paper.
 ## Stack
 
 React 19 · Vite · Tailwind CSS 4 · Node/Express 5 · Gemini API
-(free tier, native PDF reading, structured outputs) · Render
+(free tier, native PDF reading, structured outputs) · Vercel
