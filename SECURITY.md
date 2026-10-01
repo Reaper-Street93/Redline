@@ -19,8 +19,10 @@ and a third-party AI processor. The security work is aimed there.
 
 **The browser can't be turned against the user.**
 - A strict `Content-Security-Policy` allows scripts only from this origin plus
-  the one inline theme snippet (pinned by its exact SHA-256 hash, computed from
-  the shipped file at startup so it can't drift). Even if a rendered value
+  the one inline theme snippet (pinned by its exact SHA-256 hash). Locally the
+  server computes the hash from the shipped file at startup; on Vercel the
+  page is served with the same headers from `vercel.json`, and `npm run check`
+  fails if the two ever disagree. Even if a rendered value
   carried markup, the browser would refuse to execute it.
 - React escapes all rendered text; there is no `dangerouslySetInnerHTML`, no
   `eval`, no `innerHTML` anywhere in the codebase.
@@ -52,10 +54,11 @@ ever taken from user input.
 
 ## Known limitations (honest about the residual risk)
 
-- **Rate-limit state is in-memory.** On a free host that sleeps and cold-starts,
-  the global daily counter resets on restart. The per-IP window still applies
-  within an uptime period, and Google's own account-level quota is the ultimate
-  backstop, but the in-app daily cap is best-effort, not a hard guarantee.
+- **Rate-limit state is in-memory.** On Vercel each function instance keeps its
+  own counters, and instances come and go with traffic, so the per-IP window
+  and the daily ceiling hold per instance rather than across the whole site.
+  Google's own account-level quota is the ultimate backstop; the in-app caps
+  are best-effort, not a hard guarantee.
 - **The body is parsed before the rate limiter runs**, so a flood of large
   bodies costs some parsing work before being rejected. Bounded by the 4.5 MB
   limit; acceptable for a personal deployment, not hardened for a hostile

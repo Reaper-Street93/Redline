@@ -16,7 +16,7 @@ you put in — written to line up with UK GDPR / EU GDPR expectations.
 
 | Data | Where it goes | Why | Kept for |
 |---|---|---|---|
-| The contract PDF | Sent to Google's Gemini API to be read; held in server memory for the duration of one request | It's the document being analysed | Not stored — discarded when the request ends |
+| The contract PDF | Passes through Redline's server (Vercel, London region) to Google's Gemini API to be read; held in server memory for the duration of one request | It's the document being analysed | Not stored — discarded when the request ends |
 | Your profile (role, skills, achievements, salary targets, notes) | Stored in your browser's `localStorage`; sent to Gemini as part of an analysis so asks can cite your experience | To ground the negotiation advice in your own record | Until you edit or erase it; never leaves your browser except within a request you trigger |
 | Past reports | Stored in your browser's `localStorage` | So you can reopen and compare them | Until you delete them |
 | Consent flag, theme choice | Stored in your browser's `localStorage` | To remember you've read the notice and your light/dark preference | Until you erase everything |
@@ -32,9 +32,13 @@ Insurance numbers, long account/card numbers and URLs. It does **not** claim to
 remove names, because that can't be done reliably — see the redaction note in
 the code. The contract itself is sent as-is, because it is the thing being read.
 
-## The third-party processor, and international transfer
+## Third parties, and international transfer
 
-Redline uses **Google's Gemini API** as its sole processor — it is what reads
+Redline runs on **Vercel**, in its London region. Your contract passes through
+that server in memory for the length of one request on its way to Google;
+Redline never writes it to disk and never logs it.
+
+Redline uses **Google's Gemini API** to do the reading — it is what reads
 the contract and drafts the report. Your contract, and your (redacted) profile,
 are sent to Google for that purpose. Google may process this data on servers
 outside the UK/EEA. This is disclosed in the app **before your first upload**,
