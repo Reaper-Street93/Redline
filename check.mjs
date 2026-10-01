@@ -205,6 +205,21 @@ const hist = renderToStaticMarkup(React.createElement(HistorySheet, {
 }));
 check("history: uses the short verdict wording", hist.includes("negotiate first"));
 
+// ── Deploy headers ─────────────────────────────────────────────────────────
+// On Vercel the page comes off the CDN without touching Express, so vercel.json
+// carries its own copy of the security headers. It has to say exactly what the
+// server says, with a CSP that allows exactly the inline scripts index.html has.
+const { securityHeaders, inlineScriptHashes } = await import("./headers.js");
+const read = (file) => fs.readFileSync(new URL(file, import.meta.url), "utf8");
+const expected = securityHeaders(inlineScriptHashes(read("./index.html")));
+const deployed = Object.fromEntries(
+  (JSON.parse(read("./vercel.json")).headers?.find((h) => h.source === "/(.*)")?.headers ?? [])
+    .map((h) => [h.key, h.value]),
+);
+const drifted = Object.keys({ ...expected, ...deployed }).filter((k) => expected[k] !== deployed[k]);
+check("deploy: vercel.json headers match the server's", !drifted.length, drifted.join(", "));
+check("deploy: csp pins the theme snippet by hash", /script-src 'self' 'sha256-[^']+'/.test(deployed["Content-Security-Policy"] ?? ""));
+
 for (const [state, name, detail] of results) console.log(`  ${state}  ${name}${detail ? "  — " + detail : ""}`);
 const failed = results.filter(r => r[0] === "FAIL").length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
