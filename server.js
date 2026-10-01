@@ -1,6 +1,5 @@
 import zlib from "node:zlib";
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import {
@@ -13,6 +12,7 @@ import {
 import { REPORT_SCHEMA, PROFILE_SCHEMA } from "./schemas.js";
 import { analysePrompt, cvPrompt, chatPrompt } from "./prompts.js";
 import { SAMPLE_REPORT } from "./src/sampleReport.js";
+import { securityHeaders, inlineScriptHashes } from "./headers.js";
 
 const app = express();
 // Don't advertise the stack — one less thing for a scanner to fingerprint.
@@ -22,20 +22,14 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 // ── Security headers ─────────────────────────────────────────────────────────
-// Set on every response, before anything else runs. The Content-Security-Policy
-// is the important one: it says scripts may only come from this origin (plus the
-// one inline theme snippet in index.html, allowed by its exact hash), styles
-// from here or Google Fonts, connections only to here. Even if a rendered value
-// somehow carried markup, the browser would refuse to run it.
+// Set on every response, before anything else runs. What they are and why
+// lives in headers.js, shared with vercel.json.
 //
 // The inline-script hash is read from the built index.html at startup rather
 // than hard-coded, so it can never drift out of sync with what ships.
-function inlineScriptHashes() {
+function builtScriptHashes() {
   try {
-    const html = readFileSync(`${import.meta.dirname}/dist/index.html`, "utf8");
-    return [...html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)]
-      .map((m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`)
-      .join(" ");
+    return inlineScriptHashes(readFileSync(`${import.meta.dirname}/dist/index.html`, "utf8"));
   } catch {
     // No build yet (e.g. `npm start` before `npm run build`) — the CSP still
     // stands, it just won't allow the theme snippet until dist exists.
@@ -43,31 +37,10 @@ function inlineScriptHashes() {
   }
 }
 
-const CSP = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "img-src 'self' data:",
-  "font-src 'self' https://fonts.gstatic.com",
-  // 'unsafe-inline' here covers React's style="" attributes (the score bars),
-  // not scripts — script injection stays blocked by script-src below.
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self' ${inlineScriptHashes()}`.trim(),
-  "connect-src 'self'",
-].join("; ");
+const SECURITY_HEADERS = securityHeaders(builtScriptHashes());
 
 app.use((_req, res, next) => {
-  res.setHeader("Content-Security-Policy", CSP);
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-  // Only meaningful once served over HTTPS (Render terminates TLS); browsers
-  // ignore it over plain http, so it's safe to send locally too.
-  res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  res.set(SECURITY_HEADERS);
   next();
 });
 
