@@ -4,3 +4,5 @@ dist
 *.pdf
 public/
 .check-bundle.mjs
+.vercel
+.env.local
