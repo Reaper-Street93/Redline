@@ -8,12 +8,12 @@ and a third-party AI processor. The security work is aimed there.
 
 **Input is treated as hostile.**
 - Uploads must be PDFs (magic-byte check, not just the file extension), capped
-  at 10 MB and 40 pages. The page count looks *inside* Flate-compressed object
+  at 3 MB and 40 pages. The page count looks *inside* Flate-compressed object
   streams, so a document that hides its real length can't slip the cap, and
   decompression is bounded by a 32 MB budget so a compression bomb can't be
   used to exhaust memory.
-- The JSON body limit is 16 MB — enough for the largest allowed PDF as base64,
-  no more.
+- The JSON body limit is 4.5 MB — enough for the largest allowed PDF as
+  base64, no more, and the most Vercel accepts anyway.
 - The model answers against a fixed JSON schema, so its output is shape-checked
   before anything renders.
 
@@ -57,7 +57,7 @@ ever taken from user input.
   within an uptime period, and Google's own account-level quota is the ultimate
   backstop, but the in-app daily cap is best-effort, not a hard guarantee.
 - **The body is parsed before the rate limiter runs**, so a flood of large
-  bodies costs some parsing work before being rejected. Bounded by the 16 MB
+  bodies costs some parsing work before being rejected. Bounded by the 4.5 MB
   limit; acceptable for a personal deployment, not hardened for a hostile
   internet at scale.
 - **Prompt injection via the contract** is possible in principle — a PDF could

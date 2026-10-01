@@ -19,7 +19,7 @@ statement of terms. Dropped or picked in the browser.
   layer.
 - **Nothing is stored.** The bytes live in server memory for the length of
   one request and are never written to disk, never logged, never cached.
-- Hard cap: **10 MB / 40 pages**. Employment contracts are ten pages; anything
+- Hard cap: **3 MB / 40 pages**. Employment contracts are ten pages; anything
   bigger is a different document and gets refused politely.
 
 ### 2. Your profile

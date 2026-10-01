@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "./Logo.jsx";
 import { formatSize } from "./pdf.js";
+import { MAX_PDF_BYTES } from "../limits.js";
 import { micro } from "./ui.jsx";
 
 // The first screen: what this is, and the one thing to do about it. Pulled out
@@ -68,7 +69,7 @@ export default function UploadScreen({
           <p className={`mt-1.5 ${micro} text-ink/40`}>
             {file
               ? `${formatSize(file.size)} — ready`
-              : "PDF · up to 10 MB · nothing is stored"}
+              : `PDF · up to ${MAX_PDF_BYTES / 1024 / 1024} MB · nothing is stored`}
           </p>
         </div>
         <input
